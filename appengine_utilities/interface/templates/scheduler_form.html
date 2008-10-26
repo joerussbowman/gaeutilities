@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block header-content %}
+<h3>Scheduler</h3>
+<p>This utility allows you to schedule url's to be fetched at certain times/intervals. These actions are initiated during normal requests to your website, as long as request includes an import appengine_utlities.event.
+</p>
+{% endblock %}
+{% block content %}
+<form method="post" action="">
+Minute: <input type="text" size="2" name="min">
+Hour: <input type="text" size="2" name="hour">
+Day: <input type="text" size="2" name="day">
+Month: <input type="text" size="2" name="mon">
+Day of Week: <input type="text" size="2" name="dow"><br />
+URL: <input type="text" size="80" name="url">
+</form>
+{% endblock %}
