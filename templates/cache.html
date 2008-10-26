@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block header-content %}
+<h3>Cache</h3>
+<p>Cache is a caching class built using Big Table as it's storage. Google App Engine doesn't give you any access to storing data directly on a filesystem, so Cache was built to replace that functionality some what. The idea is that you can save CPU cycles and increase application performance by storing pre-generated content and objects in the data store. Like session, cache uses the standard Python methods for container access.
+</p>
+{% endblock %}
+{% block content %}
+    cacheItemStr = {{ cacheItemStr }}<br />
+    cacheItemObj = {{ cacheItemObj.0 }}<br />
+    dynamickey = {{ dynamickey }}<br />
+    {{ memcacheStats }}
+<div class="code">
+<h2>webapp class</h2>
+<pre>{% filter escape %}class CachePage(webapp.RequestHandler):
+  def get(self):
+    self.cache = cache.Cache()
+    # test deleting a cache object
+    del self.cache["sampleStr"]
+    # set a string
+    if not "sampleStr" in self.cache:
+        self.cache["sampleStr"] = "This is a string passed to the cache"
+    # store an object
+    if not "sampleObj" in self.cache:
+        self.cache["sampleObj"] = ["this was set up as a list to test object caching"]
+    self.memcacheStats = memcache.get_stats()
+    template_values = {
+        'cacheItemStr': self.cache["sampleStr"],
+        'cacheItemObj': self.cache["sampleObj"],
+        'memcacheStats': self.memcacheStats,
+    }
+    path = os.path.join(os.path.dirname(__file__), 'templates/cache.html')
+    self.response.out.write(template.render(path, template_values))
+
+{% endfilter %}</pre>
+</div>
+<div class="code">
+<h2>template</h2>
+<pre>{% filter escape %}
+    cacheItemStr = {% templatetag openvariable %} cacheItemStr {% templatetag closevariable %}<br />
+    cacheItemObj = {% templatetag openvariable %} cacheItemObj.0 {% templatetag closevariable %}<br />
+{% endfilter %}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block header-content %}
+<h3>Flash</h3>
+<p>    Send messages to the user between pages.</p>
+<p></p>
+<p>    When you instantiate the class, the attribute 'msg' will be set from the
+    cookie, and the cookie will be deleted. If there is no flash cookie, 'msg'
+    will default to None.</p>
+<p></p>
+<p>    To set a flash message for the next page, simply set the 'msg' attribute.
+</p>
+{% endblock %}
+{% block content %}
+    {% if flash.msg %}
+    <p>{{ flash.msg }}</p>
+    {% endif %}
+    <p> Welcome to the flash demo. You can <a href="/flash?setflash=true">Set flash data</a>.</p>
+<div class="code">
+<h2>webapp class</h2>
+<pre>{% filter escape %}class FlashPage(webapp.RequestHandler):
+  def get(self):
+    self.flash = flash.Flash()
+    if self.request.get('setflash') == "true":
+        self.flash.msg = 'You set a flash message! <a href="/flash">Refresh this page</a> and this message is gone!'
+        print "Location: /flash\n\n"
+    else:
+        template_values = {
+            'flash': self.flash,
+        }
+        path = os.path.join(os.path.dirname(__file__), 'templates/flash.html')
+        self.response.out.write(template.render(path, template_values))
+
+{% endfilter %}</pre>
+</div>
+<div class="code">
+<h2>template</h2>
+<pre>
+{% filter escape %}{% templatetag openblock %} if flash.msg {% templatetag closeblock %}
+    <p>{% templatetag openvariable %} flash.msg {% templatetag closevariable %}</p>
+    {% templatetag openblock %} endif {% templatetag closeblock %}
+    <p> Welcome to the flash demo. You can <a href="/flash?setflash=true">Set flash data</a>.</p>
+</p>
+{% endfilter %}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block header-content %}
+<h3>Welcome</h3>
+<p>Welcome to the appengine-utilities project demo site. appengine-utilities is a collection of utilities designed to reduce the amount of time required to build applications on top of the Google AppEngine environment. It includes:</p>
+<p>
+<ul>
+    <li><strong>sessions: </strong>A complete sessions management class that uses both the datastore and memcache to provide a high performance library while maintaining reliability.</li>
+    <li><strong>cache: </strong>A simple to use caching system that utilizes both the datastore and memcache for storage.</li>
+    <li><strong>flash: </strong>A cookie based messaging utility. Set a flash message to be displayed on the next request made by the user. This is also integrated into sessions.</li>
+    <li><strong>event: </strong>A subscribe/fire event system. Events are included in sessions and cache which can be hooked into using this class.</li>
+</ul>
+</p>
+{% endblock %}
+{% block content %}
+        <h2>Recent Updates</h2>
+        <p><strong>[10/21/2008]</strong> .1.0rc4 release. Changed the json loading to handle the event where some browsers do not delete the flash cookie as requested, but just null the value out.</p>
+        <p><strong>[10/20/2008]</strong> .1.0rc3 release. Cache clean fixed. It wasn't working. Renamed appengine_utilities/django to appengine_utilities/django-middleware, solving a conflict with importing django for the flash fix. Modified flash to use json instead of pickle for serializing data</p>
+        <p><strong>[10/08/2008]</strong> .1.0rc2 release. This release adds cycle_key() to session for better compatibility with django 1.0. The demo code has been updated in order to account for the more aggressive caching by appengine.</p>
+        <p><strong>[09/15/2008]</strong> .1.0rc1 release. This release has a couple bug fixes and includes documentation. This release candidate for the 1.0 release. The project is now in a feature freeze and is looking for bugs.</p>
+        <p><strong>[08/31/2008]</strong> .8 release. This release has cache rewritten to use the memcache and also plug directly in as a django backend.</p> 
+        <p><strong>[08/27/2008]</strong> .7.1 release. Lots of updates including session token regeneration, and django middleware for sessions. See the full <a href="http://code.google.com/p/appengine-utitlies/wiki/changelog?updated=changelog&ts=1219888635">changelog</a> now on the wiki for more details.</p>
+        <p><strong>[08/20/2008]</strong> .7 release. <ul>
+<li>Memcache rewritten due to problems with the previous implementation. The new version should be a lot more stable.</li>
+<li>session() renamed to sessions(), current users will need to update their imports.</li>
+<li>Model names for sessions changed. Old model data will need to be deleted manually.</li>
+<li>Flash functionality for sessions has been moved to a separate class. It plugs into sessions by default, but now can be used without sessions.</li>
+</ul></p>
+        <p><strong>[07/30/2008]</strong> .6 release. Memcache support added for session class. Memcache is polled before the datastore. If there is not a hit in the memcache the datastore is polled. If there is a hit in the datastore, the memcache gets updated for further hits. This provides the performance increase of memcache while still providing session data reliability.</p>
+        <p><strong>[07/13/2008]</strong> .5.1 release. Bug fix for cache item deletion. This will also stop __clean_cache() from causing an error on 15% of page loads.</p>
+        <p><strong>[07/08/2008]</strong> .5 release. Major changes that allow session and cache to be stored as objects.</p>
+        <p><strong>[05/27/2008]</strong> .3.1 released. This fixes a bug that was creating problems with the flash cookie in both IE and Opera.</p>
+        <p><strong>[05/26/2008]</strong> .3 released. Event and Cache added as well as the demo page redesign.</p>
+        <p><strong>[05/25/2008]</strong> .2.1 released to fix a bug in session validation. </p>
+        <p><strong>[05/19/2008]</strong> .2 is released to the public. Improvements to the Session class include wrap up of container/dict functionality, and new flash data functionality. Demo updated to show new flash data feature. </p>
+        <p><strong>[05/16/2008]</strong> In the very early hours of the morning, .1 has been released to the world and is available in the download sections. This is the first baby step towards what will hopefully be an interesting 1.0 release one day. </p>
+        <p><strong>[05/15/2008]</strong> Our demo site is up, currently showing the functionality of our first class Session, used for session management inside GAE applications. </p>
+
+{% endblock %}

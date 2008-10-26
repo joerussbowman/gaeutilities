@@ -1,0 +1,83 @@
+Changelog
+
+.7.1
+ - sessions: cookie_name, clean_check_percent, integrate_flash added 
+    to __init__() as arguments.
+ - sessions: Added SET_COOKIE_EXPIRES global. When set to true an expiration
+    field is added to the cookie to preserve sessions even after
+    the browser is closed. Set to false, session cookies follow
+    the default behaviour of the browser, which normally deletes
+    the cookie when the browser is closed.
+ - sessions: Added set_cookie_expires to __init__() as an argument.
+ - sessions: CHECK_USER_AGENT and CHECK_IP added to explicitly
+    call whether or not browser user agent and ip should be used to
+    validate session cookies.
+ - sessions: check_user_agent and check_ip added to __init__() as
+    arguments.
+ - sessions: _get_session() modified to remove the gql.count() call for
+    better performance. Also checks for IP as well as User Agent. Both now
+    only check if the appropriate check_ip or check_user_agent are set.
+ - sessions: session_expires argument renamed to session_expire_time to be 
+    consistent with the SESSION_EXPIRE_TIME global
+ - sessions: _validate_sid() removed. It's functionality has been moved
+    to _get_session()
+ - sessions: _set_memcache() changed to always reset the memcache with all
+    information from datastore. Ability to add key => value pairs has been
+    removed.
+ - sessions: get() and put() changed to _get() and _put() to make them
+    private.
+ - sessions: Checks against global variables replaced with the self references
+    to __init__() arguments in order to support them.
+ - sessions: Replaced a lot of separate queries for Session and SessionData with 
+    _get_session() and _get() in order to have duplicated code.
+ - sessions: Demo upgraded to demonstrate iteration.
+ - sessions: self.ds changed to self.session to be more explicit.
+ - sessions: datastore interaction removed from self._new_sid() as it really should just
+    create a session token to be assigned to the model.
+ - sessions: __setitem__() now updates internal cache and memcache
+ - sessions: Models changed to use db.ReferencePropery() in the SessionData model. All relevant
+    methods updated.
+ - sessions: Memcache updated to use the Session.key() for it's identifier.
+ - sessions: session token now changes every request in both the browser and all server
+    side instances in order to add security.
+ - flash: Added an optional argument, cookie, to the initialization so you can pass cookie references to it. This is useful in order to keep cookie modifications consistent between writes.
+ - sessions: _clean_old_sessions() modified to not use db.count(), and also deleted memcache items now. All instances of db.count() removed from sessions.
+ - sessions: Many docstring updates.
+ - sessions: Variable names throughout the class updated to be more consistent.
+ - sessions: added delete_all_sessions()
+ - sessions: A couple changes in if statements to use is instead of == for more standardization
+ - flash: Created a demo page for flash.
+ - sessions: Added SESSION_TOKEN_TTL and a session_token_ttl argument to set how long a session token should remain valid for The default is 10 seconds which appears to be long enough for me to spam the refresh button several times even running the SDK on a slower pc.
+ - sessions: Modified Session.sid to be a StringListProperty() that keeps the current, plus 1 previous session token. This allowed me to drop the TTL to 5 seconds and provide stability through frequent refreshes.
+ - demo: Various text and css updates to the demo application.
+ - sessions: added django middleware, which includes adding testcookie functions
+
+.8
+ - cache: A lot of refactoring, preparing it for use as a drop in cache backend for django.
+ - cache: uses memcache in addition to the datastore
+ - demo: added memcache stats to the demo
+ - demo: updated demo to include deleting a cache object
+ - cache: passed the pep8 test
+ - event: passed the pep8 test
+ - sessions: sessionDelete event changed to sessionDeleted
+ - sessions: sessionInititalized, sessionGetFromDatastore, sessionDataGetFromDatastore, sessionDataPut, sessionDataGetFromMemcache, sessionMemcacheUpdated events added.
+ - cache: cacheInitialized, cacheAdd, cacheSet, cacheReadFromDatastore, cacheReadFromMemcache, cacheRead, cacheDeleted events added.
+
+1.0rc1
+ - demo: upated some of the demo functions to add some more checks for dynamically creating keynames for cache and session
+ - sessions: made some changes to the keyname validation. Instead of erroring on a keyname not being a string, it automatically converts it to a string. It's a requirement for the datastore storage that keynames be strings. in order to index on them, binary storage is not an option.
+ - sessions: bugfix to correct an issue where the argument passed to change the cookie name wasn't working
+ - cache: cacheAdd event renamed to cacheAdded
+ - cache: changed __set__() to use cache.set() instead of cache.add() to be more consistent with standard dictionary use.
+
+ 1.0rc2
+ - session: updated to add cycle_key method in order to help with use with django
+ - demo: added <meta http-equiv="Cache-Control" content="no-cache" /> to the html header for all pages on the site, due to aggressive caching by appengine
+
+ 1.0rc3
+ - cache clean fixed. It wasn't working
+ - renamed appengine_utilities/django to appengine_utilities/django-middleware, solving a conflict with importing django for the flash fix
+ - modified flash to use json instead of pickle for serializing data
+
+ 1.0rc4
+ - flash: wrapped the simplejson.loads() in a try/except to handle when the json sent by the browser does not validate.

@@ -1,0 +1,27 @@
+====================================
+Flash
+====================================
+
+    Send messages to the user between pages.
+
+    When you instantiate the class, the attribute 'msg' will be set from the
+    cookie, and the cookie will be deleted. If there is no flash cookie, 'msg'
+    will default to None.
+
+Using Flash
+=================
+
+    To set a flash message for the next page, simply set the 'msg' attribute.
+
+    Example psuedocode:
+
+        if new_entity.put():
+            flash = Flash()
+            flash.msg = 'Your new entity has been created!'
+            return redirect_to_entity_list()
+
+    Then in the template on the next page (you must pass flash to the template as a variable for this work):
+
+        {% if flash.msg %}
+            <div class="flash-msg">{{ flash.msg }}</div>
+        {% endif %}
