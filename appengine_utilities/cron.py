@@ -26,8 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import re
 import datetime
-# from google.appengine.ext import db
-'''
+from google.appengine.ext import db
+
 class _AppEngineUtilities_Cron(db.Model):
     """
     Model for the tasks in the datastore. This contains the scheduling and
@@ -37,7 +37,7 @@ class _AppEngineUtilities_Cron(db.Model):
 
     cron_entry = db.StringProperty()
     next_run = db.DateTimeProperty()
-'''
+    cron_compiled = db.BlobProperty()
 
 
 class Cron(object):
@@ -97,15 +97,6 @@ class Cron(object):
 
         return cron
 
-    def _validate_type_str(self, t):
-        """
-        Validates that the type string (t) is valid.
-        """
-        types = ['min', 'hour', 'day', 'mon', 'dow']
-        if not t in types:
-            raise ValueError, "Invalid type string passed."
-        return True
-
     def _validate_type(self, v, t):
         """
         Validates that the number (v) passed is in the correct range for the
@@ -120,39 +111,37 @@ class Cron(object):
 
         All can * which will then return the range for that entire type.
         """
-        self._validate_type_str(t)
-
         if t == "dow":
             if v >= 0 and v <= 7:
-                return v
+                return [v]
             elif v == "*":
-                return range(0, 7)
+                return "*"
             else:
                 raise ValueError, "Invalid day of week."
         elif t == "mon":
             if v >= 1 and v <= 12:
-                return v
+                return [v]
             elif v == "*":
                 return range(1, 12)
             else:
                 raise ValueError, "Invalid month."
         elif t == "day":
             if v >= 1 and v <= 31:
-                return v
+                return [v]
             elif v == "*":
                 return range(1, 31)
             else:
                 raise ValueError, "Invalid day."
         elif t == "hour":
             if v >= 0 and v <= 23:
-                return v
+                return [v]
             elif v == "*":
                 return range(0, 23)
             else:
                 raise ValueError, "Invalid hour."
         elif t == "min":
             if v >= 0 and v <= 59:
-                return v
+                return [v]
             elif v == "*":
                 return range(0, 59)
             else:
@@ -168,8 +157,6 @@ class Cron(object):
             t: type used for validation, valid values are
                 dow, mon, day, hour, min
         """
-        self._validate_type_str(t)
-
         elements = l.split(",")
         return_list = []
         # we have a list, validate all of them
@@ -196,8 +183,6 @@ class Cron(object):
             t: type used for validation, valid values are
                 dow, mon, day, hour, min
         """
-        self._validate_type_str(t)
-
         elements = r.split('-')
         # a range should be 2 elements
         if len(elements) is not 2:
@@ -223,8 +208,6 @@ class Cron(object):
             t: type used for validation, valid values are
                 dow, mon, day, hour, min
         """
-        self._validate_type_str(t)
-
         elements = s.split('/')
         # a range should be 2 elements
         if len(elements) is not 2:
@@ -253,6 +236,9 @@ class Cron(object):
         elif "-" in elements[0]:
             r_list.extend(self._validate_range(elements[0], t))
         for ra in r_list:
+            #TODO: Need to change this to a step to match description in
+            # man crontab(5) where 1-9/2 would be 1,3,5,7,9
+            # Divisible by is not the case.
             if ra%step == 0:
                 s_list.append(ra)
         if len(s_list) is 1:
@@ -278,7 +264,7 @@ class Cron(object):
         }
         if dow in days:
             dow = days[dow]
-            return dow
+            return [dow]
         # if dow is * return it. This is for date parsing where * does not mean
         # every day for crontab entries.
         elif dow is "*":
@@ -294,7 +280,7 @@ class Cron(object):
             if not int(dow) in valid_numbers:
                 raise ValueError, "Invalid day of week " + str(dow)
             else:
-                return int(dow)
+                return [int(dow)]
 
     def _validate_mon(self, mon):
         months = {
@@ -313,7 +299,7 @@ class Cron(object):
         }
         if mon in months:
             mon = months[mon]
-            return mon
+            return [mon]
         elif mon is "*":
             return range(1, 13)
         elif "/" in mon:
@@ -327,7 +313,7 @@ class Cron(object):
             if not int(mon) in valid_numbers:
                 raise ValueError, "Invalid month " + str(mon)
             else:
-                return int(mon)
+                return [int(mon)]
 
     def _validate_day(self, day):
         if day is "*":
@@ -343,7 +329,7 @@ class Cron(object):
             if not int(day) in valid_numbers:
                 raise ValueError, "Invalid day " + str(day)
             else:
-                return int(day)
+                return [int(day)]
 
     def _validate_hour(self, hour):
         if hour is "*":
@@ -359,7 +345,7 @@ class Cron(object):
             if not int(hour) in valid_numbers:
                 raise ValueError, "Invalid hour " + str(hour)
             else:
-                return int(hour)
+                return [int(hour)]
 
     def _validate_min(self, min):
         if min is "*":
@@ -375,7 +361,7 @@ class Cron(object):
             if not int(min) in valid_numbers:
                 raise ValueError, "Invalid min " + str(min)
             else:
-                return int(min)
+                return [int(min)]
 
     def _validate_url(self, url):
         regex = re.compile("^(http|https):\/\/([a-z0-9-]\.+)*", re.IGNORECASE)
@@ -385,31 +371,76 @@ class Cron(object):
             raise ValueError, "Invalid url " + url
 
     def _calc_month(self, next_run, cron):
-        if type(cron["mon"]) is type(int):
-            if cron["mon"] < next_run.month:
-                next_run.replace(year=next_run.year+1,month=cron["mon"])
-            else:
-                next_run.replace(month=cron["mon"])
+        if cron["mon"][-1] < next_run.month:
+            next_run = next_run.replace(year=next_run.year+1, \
+            month=cron["mon"][0], \
+            day=1,hour=0,minute=0)
         else:
-            if cron["mon"][-1] < next_run.month:
-                next_run = next_run.replace(year=next_run.year+1,month=cron["mon"][0])
-            else:
-                for m in cron["mon"]:
-                    if m < next_run.month:
-                        continue
-                    else:
-                        next_run = next_run.replace(month=cron["mon"])
+            for m in cron["mon"]:
+                if m < next_run.month:
+                    continue
+                else:
+                    next_run = next_run.replace(month=m)
         return next_run
 
     def _calc_day(self, next_run, cron):
         # start with dow as per cron if dow and day are set
         # then dow is used if it comes before day. If dow
         # is *, then ignore it.
-        if dow is not "*":
-            if cron["dow"] is next_run.weekday() or cron["day"] is next_run.day
+        if cron["dow"] is not "*":
+            # convert any integers to lists in order to easily compare values
+            m = next_run.month
+            while True:
+                if next_run.month is not m:
+                    next_run = next_run.replace(hour=0, minute=0)
+                    next_run = self.calc_month(next_run, cron)
+                # if cron["dow"] is next_run.weekday() or cron["day"] is next_run.day:
+                if next_run.weekday() in cron["dow"] or next_run.day in cron["day"]:
+                    return next_run
+                else:
+                    one_day = datetime.timedelta(days=1)
+                    next_run = next_run + one_day
+
+    def _calc_hour(self, next_run, cron):
+        m = next_run.month
+        d = next_run.day
+        while True:
+            if next_run.month is not m:
+                next_run = next_run.replace(hour=0, minute=0)
+                next_run = self.calc_month(next_run, cron)
+            if next_run.day is not d:
+                next_run = next_run.replace(hour=0)
+                next_run = self.calc_day(next_run, cron)
+            if next_run.hour in cron["hour"]:
                 return next_run
             else:
-                pass
+                m = next_run.month
+                d = next_run.day
+                one_hour = datetime.timedelta(hours=1)
+                next_run = next_run + one_hour
+
+    def _calc_minute(self, next_run, cron):
+        m = next_run.month
+        d = next_run.day
+        h = next_run.hour
+        while True:
+            if next_run.month is not m:
+                next_run = next_run.replace(minute=0)
+                next_run = self.calc_month(next_run, cron)
+            if next_run.day is not d:
+                next_run = next_run.replace(minute=0)
+                next_run = self.calc_day(next_run, cron)
+            if next_run.hour is not h:
+                next_run = next_run.replace(minute=0)
+                next_run = self.calc_day(next_run, cron)
+            if next_run.minute in cron["min"]:
+                return next_run
+            else:
+                m = next_run.month
+                d = next_run.day
+                h = next_run.hour
+                one_minute = datetime.timedelta(minutes=1)
+                next_run = next_run + one_minute
 
     def _get_next_run(self, cron):
         now = datetime.datetime.now()
@@ -417,4 +448,7 @@ class Cron(object):
 
         # start with month, which will also help calculate year
         next_run = self._calc_month(next_run, cron)
+        next_run = self._calc_day(next_run, cron)
+        next_run = self._calc_hour(next_run, cron)
+        next_run = self._calc_minute(next_run, cron)
         return next_run

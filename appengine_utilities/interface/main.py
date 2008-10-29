@@ -16,7 +16,7 @@ import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
-from appengine_utilities import event
+from appengine_utilities import cron
 
 class MainPage(webapp.RequestHandler):
     def get(self):
@@ -26,7 +26,7 @@ class MainPage(webapp.RequestHandler):
 
 def main():
     application = webapp.WSGIApplication(
-                                       [('/appengine_utilities', MainPage)],
+                                       [('/gaeutilities/', MainPage)],
                                        debug=True)
     wsgiref.handlers.CGIHandler().run(application)
 

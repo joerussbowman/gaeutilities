@@ -5,12 +5,9 @@
 </p>
 {% endblock %}
 {% block content %}
+Add cron entry
 <form method="post" action="">
-Minute: <input type="text" size="2" name="min">
-Hour: <input type="text" size="2" name="hour">
-Day: <input type="text" size="2" name="day">
-Month: <input type="text" size="2" name="mon">
-Day of Week: <input type="text" size="2" name="dow"><br />
-URL: <input type="text" size="80" name="url">
+<input type="text" size="80" name="cron_entry" /><br />
+<input type="submit" value="Submit" />
 </form>
 {% endblock %}
