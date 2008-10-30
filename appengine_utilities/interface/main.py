@@ -21,6 +21,7 @@ from appengine_utilities import cron
 
 class MainPage(webapp.RequestHandler):
     def get(self):
+        c = cron.Cron()
         query = cron._AppEngineUtilities_Cron.all()
         results = query.fetch(1000) 
         template_values = {"cron_entries" : results}
@@ -28,13 +29,6 @@ class MainPage(webapp.RequestHandler):
         self.response.out.write(template.render(path, template_values))
 
     def post(self):
-        print str(self.request.get('action'))
-        if str(self.request.get('action')) is "Delete":
-            print 'delete'
-            exit()
-        if str(self.request.get('action')) is "Edit":
-            print 'delete'
-            exit()
         cron.Cron().add_cron(str(self.request.get('cron_entry')))
         query = cron._AppEngineUtilities_Cron.all()
         results = query.fetch(1000) 

@@ -151,8 +151,14 @@ class Session(object):
             if self.session is None:
                 self.sid = self.new_sid()
                 self.session = _AppEngineUtilities_Session()
-                self.session.ua = os.environ['HTTP_USER_AGENT']
-                self.session.ip = os.environ['REMOTE_ADDR']
+                if 'HTTP_USER_AGENT' in os.environ:
+                    self.session.ua = os.environ['HTTP_USER_AGENT']
+                else:
+                    self.session.ua = None
+                if 'REMOTE_ADDR' in os.environ:
+                    self.session.ip = os.environ['REMOTE_ADDR']
+                else:
+                    self.session.ip = None
                 self.session.sid = [self.sid]
                 self.cookie[cookie_name] = self.sid
                 self.cookie[cookie_name]['path'] = cookie_path

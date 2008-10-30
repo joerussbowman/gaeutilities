@@ -24,10 +24,13 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import os
+import cgi
 import re
 import datetime
 import pickle
 from google.appengine.ext import db
+from google.appengine.api import urlfetch
 
 class _AppEngineUtilities_Cron(db.Model):
     """
@@ -39,7 +42,7 @@ class _AppEngineUtilities_Cron(db.Model):
     cron_entry = db.StringProperty()
     next_run = db.DateTimeProperty()
     cron_compiled = db.BlobProperty()
-
+    url = db.LinkProperty()
 
 class Cron(object):
     """
@@ -60,6 +63,29 @@ class Cron(object):
     your application to support Cron and setting up tasks.
     """
 
+    def __init__(self):
+        # Check if any tasks need to be run
+        query = _AppEngineUtilities_Cron.all()
+        results = query.fetch(1000)
+        if len(results) > 0:
+            one_second = datetime.timedelta(seconds = 1)
+            before  = datetime.datetime.now()
+            for r in results:
+                result = urlfetch.fetch(r.url,
+                                    headers={'User-Agent': 'gaeutilities cron - http://gaeutilities.appspot.com/'})
+                '''diff = datetime.datetime.now() - before
+                if int(diff.seconds) < 1:
+                    print 'fetch'
+                    result = urlfetch.fetch(r.url)
+                    if result.status_code == 200:
+                        r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
+                        r.put()
+                    else:
+                        pass
+                else:
+                    print 'break'
+                    break'''
+
     def add_cron(self, cron_string):
         cron = cron_string.split(" ")
         if len(cron) is not 6:
@@ -78,6 +104,7 @@ class Cron(object):
         cron_entry.cron_entry = cron_string
         cron_entry.next_run = next_run
         cron_entry.cron_compiled = pickle.dumps(cron_compiled)
+        cron_entry.url = cron["url"]
         cron_entry.put()
 
     def _validate_cron(self, cron):
@@ -220,7 +247,6 @@ class Cron(object):
         except:
             raise ValueError, "Invalid step provided " + str(s)
         r_list = []
-        s_list = []
         # if the first element is *, use all valid numbers
         if elements[0] is "*" or elements[0] is "":
             r_list.extend(self._validate_type('*', t))
@@ -238,15 +264,7 @@ class Cron(object):
                         raise ValueError, "Invalid step provided " + str(s)
         elif "-" in elements[0]:
             r_list.extend(self._validate_range(elements[0], t))
-        for ra in r_list:
-            #TODO: Need to change this to a step to match description in
-            # man crontab(5) where 1-9/2 would be 1,3,5,7,9
-            # Divisible by is not the case.
-            if ra%step == 0:
-                s_list.append(ra)
-        if len(s_list) is 1:
-            return int(s_list[0])
-        return s_list
+            return range(r_list[0], r_list[-1] + 1, step)
 
     def _validate_dow(self, dow):
         """
@@ -367,12 +385,17 @@ class Cron(object):
                 return [int(min)]
 
     def _validate_url(self, url):
+        #kludge for issue 842
+        if url[0] is not "/":
+            url = "/" + url
+        url = 'http://' + str(os.environ['HTTP_HOST']) + url
         return url
-        regex = re.compile("^(http|https):\/\/([a-z0-9-]\.+)*", re.IGNORECASE)
-        if regex.match(url) is not None:
-            return url
-        else:
-            raise ValueError, "Invalid url " + url
+        # content below is for when that issue gets fixed
+        #regex = re.compile("^(http|https):\/\/([a-z0-9-]\.+)*", re.IGNORECASE)
+        #if regex.match(url) is not None:
+        #    return url
+        #else:
+        #    raise ValueError, "Invalid url " + url
 
     def _calc_month(self, next_run, cron):
         while True:
