@@ -16,7 +16,7 @@ indexes:
   - name: cachekey
   - name: expires
 
-# Used 7 times in query history.
+# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey

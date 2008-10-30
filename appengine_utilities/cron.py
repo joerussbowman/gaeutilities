@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import re
 import datetime
+import pickle
 from google.appengine.ext import db
 
 class _AppEngineUtilities_Cron(db.Model):
@@ -59,8 +60,8 @@ class Cron(object):
     your application to support Cron and setting up tasks.
     """
 
-    def add_cron(self, cron):
-        cron = cron.split(" ")
+    def add_cron(self, cron_string):
+        cron = cron_string.split(" ")
         if len(cron) is not 6:
             raise ValueError, 'Invalid cron string. Format: * * * * * url'
         cron = {
@@ -72,10 +73,12 @@ class Cron(object):
             'url': cron[5],
         }
         cron_compiled = self._validate_cron(cron)
-        print cron_compiled
         next_run = self._get_next_run(cron_compiled)
-        print next_run
-        pass
+        cron_entry = _AppEngineUtilities_Cron()
+        cron_entry.cron_entry = cron_string
+        cron_entry.next_run = next_run
+        cron_entry.cron_compiled = pickle.dumps(cron_compiled)
+        cron_entry.put()
 
     def _validate_cron(self, cron):
         """
@@ -364,6 +367,7 @@ class Cron(object):
                 return [int(min)]
 
     def _validate_url(self, url):
+        return url
         regex = re.compile("^(http|https):\/\/([a-z0-9-]\.+)*", re.IGNORECASE)
         if regex.match(url) is not None:
             return url
@@ -371,17 +375,17 @@ class Cron(object):
             raise ValueError, "Invalid url " + url
 
     def _calc_month(self, next_run, cron):
-        if cron["mon"][-1] < next_run.month:
-            next_run = next_run.replace(year=next_run.year+1, \
-            month=cron["mon"][0], \
-            day=1,hour=0,minute=0)
-        else:
-            for m in cron["mon"]:
-                if m < next_run.month:
-                    continue
+        while True:
+            if cron["mon"][-1] < next_run.month:
+                next_run = next_run.replace(year=next_run.year+1, \
+                month=cron["mon"][0], \
+                day=1,hour=0,minute=0)
+            else:
+                if next_run.month in cron["mon"]:
+                    return next_run
                 else:
-                    next_run = next_run.replace(month=m)
-        return next_run
+                    one_month = datetime.timedelta(months=1)
+                    next_run = next_run + one_month
 
     def _calc_day(self, next_run, cron):
         # start with dow as per cron if dow and day are set
@@ -393,9 +397,21 @@ class Cron(object):
             while True:
                 if next_run.month is not m:
                     next_run = next_run.replace(hour=0, minute=0)
-                    next_run = self.calc_month(next_run, cron)
+                    next_run = self._calc_month(next_run, cron)
                 # if cron["dow"] is next_run.weekday() or cron["day"] is next_run.day:
                 if next_run.weekday() in cron["dow"] or next_run.day in cron["day"]:
+                    return next_run
+                else:
+                    one_day = datetime.timedelta(days=1)
+                    next_run = next_run + one_day
+        else:
+            m = next_run.month
+            while True:
+                if next_run.month is not m:
+                    next_run = next_run.replace(hour=0, minute=0)
+                    next_run = self._calc_month(next_run, cron)
+                # if cron["dow"] is next_run.weekday() or cron["day"] is next_run.day:
+                if next_run.day in cron["day"]:
                     return next_run
                 else:
                     one_day = datetime.timedelta(days=1)
@@ -426,13 +442,13 @@ class Cron(object):
         while True:
             if next_run.month is not m:
                 next_run = next_run.replace(minute=0)
-                next_run = self.calc_month(next_run, cron)
+                next_run = self._calc_month(next_run, cron)
             if next_run.day is not d:
                 next_run = next_run.replace(minute=0)
-                next_run = self.calc_day(next_run, cron)
+                next_run = self._calc_day(next_run, cron)
             if next_run.hour is not h:
                 next_run = next_run.replace(minute=0)
-                next_run = self.calc_day(next_run, cron)
+                next_run = self._calc_day(next_run, cron)
             if next_run.minute in cron["min"]:
                 return next_run
             else:
