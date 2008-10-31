@@ -81,3 +81,9 @@ Changelog
 
  1.0rc4
  - flash: wrapped the simplejson.loads() in a try/except to handle when the json sent by the browser does not validate.
+ 1.0
+ No changes, 1.0rc4 renamed to 1.0
+
+ 1.1
+ - cron: added
+ admin interface: a small piece added for cron, will be expanded to support all utilities where applicable

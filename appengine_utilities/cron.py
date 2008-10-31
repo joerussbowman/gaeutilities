@@ -63,7 +63,7 @@ class Cron(object):
     your application to support Cron and setting up tasks.
     """
 
-    def __init__(self):
+    '''def __init__(self):
         # Check if any tasks need to be run
         query = _AppEngineUtilities_Cron.all()
         results = query.fetch(1000)
@@ -73,9 +73,8 @@ class Cron(object):
             for r in results:
                 result = urlfetch.fetch(r.url,
                                     headers={'User-Agent': 'gaeutilities cron - http://gaeutilities.appspot.com/'})
-                '''diff = datetime.datetime.now() - before
+                diff = datetime.datetime.now() - before
                 if int(diff.seconds) < 1:
-                    print 'fetch'
                     result = urlfetch.fetch(r.url)
                     if result.status_code == 200:
                         r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
@@ -83,7 +82,6 @@ class Cron(object):
                     else:
                         pass
                 else:
-                    print 'break'
                     break'''
 
     def add_cron(self, cron_string):
@@ -264,7 +262,7 @@ class Cron(object):
                         raise ValueError, "Invalid step provided " + str(s)
         elif "-" in elements[0]:
             r_list.extend(self._validate_range(elements[0], t))
-            return range(r_list[0], r_list[-1] + 1, step)
+        return range(r_list[0], r_list[-1] + 1, step)
 
     def _validate_dow(self, dow):
         """
@@ -385,7 +383,8 @@ class Cron(object):
                 return [int(min)]
 
     def _validate_url(self, url):
-        #kludge for issue 842
+        # kludge for issue 842, right now we use request headers
+        # to set the host.
         if url[0] is not "/":
             url = "/" + url
         url = 'http://' + str(os.environ['HTTP_HOST']) + url
@@ -421,7 +420,6 @@ class Cron(object):
                 if next_run.month is not m:
                     next_run = next_run.replace(hour=0, minute=0)
                     next_run = self._calc_month(next_run, cron)
-                # if cron["dow"] is next_run.weekday() or cron["day"] is next_run.day:
                 if next_run.weekday() in cron["dow"] or next_run.day in cron["day"]:
                     return next_run
                 else:
@@ -446,10 +444,10 @@ class Cron(object):
         while True:
             if next_run.month is not m:
                 next_run = next_run.replace(hour=0, minute=0)
-                next_run = self.calc_month(next_run, cron)
+                next_run = self._calc_month(next_run, cron)
             if next_run.day is not d:
                 next_run = next_run.replace(hour=0)
-                next_run = self.calc_day(next_run, cron)
+                next_run = self._calc_day(next_run, cron)
             if next_run.hour in cron["hour"]:
                 return next_run
             else:
@@ -483,7 +481,7 @@ class Cron(object):
 
     def _get_next_run(self, cron):
         now = datetime.datetime.now()
-        next_run = now
+        next_run = now.replace(second=0)
 
         # start with month, which will also help calculate year
         next_run = self._calc_month(next_run, cron)

@@ -6,7 +6,7 @@
 */
 
 *{ margin: 0; padding: 0; }*
-body { background: #fff url(../images/bodybg.gif) repeat-x; font: 74% Arial, Helvetica, Sans-Serif; color: #454545; line-height: 1.6em; }
+body { background: #fff repeat-x; font: 74% Arial, Helvetica, Sans-Serif; color: #454545; line-height: 1.6em; }
 
 a { text-decoration: none; color: #C40000; background: inherit; }
 a:hover { color: #808080; background: inherit; }	
@@ -20,15 +20,15 @@ img { border: 0; }
 #wrap { width: 900px; margin: 10px auto 0; }
 	
 #logo { float: left; width: 400px; margin: 0 0 7px; }
-	#header_top { background: url(../images/top.gif) no-repeat top right; border-right: 2px solid #fff; color: #454545; padding: 10px 0 0 7px; clear: both; margin: 0 0 0px 0; height: 74px; }
+	#header_top { background: no-repeat top right; border-right: 2px solid #fff; color: #454545; padding: 10px 0 0 7px; clear: both; margin: 0 0 0px 0; height: 74px; }
 	#header_top p { padding: 0; margin: 0; }
 
 		#header_top ul { float: right; padding: 12px 160px 0 0; margin: 0 0 5px 0; }			
 			#header_top ul li { list-style-type: none; display: inline;  font-weight: bold; }
-			#header_top ul li a { padding-left: 7px; background: #FFF url(../images/bullet.gif) no-repeat center left; margin-right: 5px; color: #C40000; }
-			#header_top ul li a:hover { padding-left: 7px; background: #FFF url(../images/bullet.gif) no-repeat center left; margin-right: 5px; color: #808080; }
+			#header_top ul li a { padding-left: 7px; background: #FFF no-repeat center left; margin-right: 5px; color: #C40000; }
+			#header_top ul li a:hover { padding-left: 7px; background: #FFF no-repeat center left; margin-right: 5px; color: #808080; }
 	
-	#header_bottom { background: #454545 url(../images/bottom.gif) no-repeat top right; color: #EBEBEB; padding: 20px 240px 20px 10px; clear: both; border-left: 2px solid #fff; border-right: 2px solid #fff; margin: 0 0 1px 0; }
+	#header_bottom { background: #454545 no-repeat top right; color: #EBEBEB; padding: 20px 240px 20px 10px; clear: both; border-left: 2px solid #fff; border-right: 2px solid #fff; margin: 0 0 1px 0; }
 	#header_bottom h2 { color: #F3F2BF; width: 250px; margin: 0 0 10px; background: #454545; }
     #header_bottom a { text-decoration: none; color: #FFFFFF; background: inherit; }
     #header_bottom a:hover { text-decoration: underline; }
@@ -38,17 +38,17 @@ img { border: 0; }
     
     #slogan { clear: left; width: 730px; border-top: 1px solid #eee; margin: 0; padding: 5px 0 0 0; }
 
-#maincontent { padding: 20px 0; clear: both; background: url(../images/bg.gif) repeat-x; }
+#maincontent { padding: 20px 0; clear: both; background: repeat-x; }
 
 #left { float: left; width: 630px; padding: 5px 15px 0 5px; margin: 0 0 25px 0; }
 	#left p { margin: 0 0 15px; }
 
 #right { width: 220px; float: right; }
 	#info { border: 1px solid #ccc; padding: 7px; font-size: .9em; background: #f4f4f4; }
-	#searchform { background: url(../images/searchform.gif) no-repeat; padding: 8px 4px 10px 4px; height: 27px; font: bold 0.9em Arial, Sans-Serif; margin: 0 0 20px; }
+	#searchform { background: no-repeat; padding: 8px 4px 10px 4px; height: 27px; font: bold 0.9em Arial, Sans-Serif; margin: 0 0 20px; }
 		#searchform p { padding: 0; margin: 0; }
-		input.search { width: 127px; border: none; background: url(../images/input.gif) no-repeat; padding: 7px; margin: 0 4px 0 5px; }
-		input.submit { width: 53px; height: 29px; border: none; background: #FFF url(../images/submit.gif) no-repeat; font: bold 1.2em Arial, Sans-Serif; padding: 0px; color: #FFF; }
+		input.search { width: 127px; border: none; background: no-repeat; padding: 7px; margin: 0 4px 0 5px; }
+		input.submit { width: 53px; height: 29px; border: none; background: #FFF  no-repeat; font: bold 1.2em Arial, Sans-Serif; padding: 0px; color: #FFF; }
 
 #footer { clear: both; padding: 10px;  margin: 10px 0 0 0; border-top: 1px solid #ccc; line-height: 2em; }
 

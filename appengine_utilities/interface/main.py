@@ -29,7 +29,11 @@ class MainPage(webapp.RequestHandler):
         self.response.out.write(template.render(path, template_values))
 
     def post(self):
-        cron.Cron().add_cron(str(self.request.get('cron_entry')))
+        if str(self.request.get('action')) == 'Add':
+            cron.Cron().add_cron(str(self.request.get('cron_entry')))
+        elif str(self.request.get('action')) == 'Delete':
+            entry = db.get(db.Key(str(self.request.get('key'))))
+            entry.delete()
         query = cron._AppEngineUtilities_Cron.all()
         results = query.fetch(1000) 
         template_values = {"cron_entries" : results}
