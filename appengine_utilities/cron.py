@@ -63,26 +63,28 @@ class Cron(object):
     your application to support Cron and setting up tasks.
     """
 
-    '''def __init__(self):
+    def __init__(self):
         # Check if any tasks need to be run
         query = _AppEngineUtilities_Cron.all()
+        query.filter('next_run <= ', datetime.datetime.now())
         results = query.fetch(1000)
         if len(results) > 0:
             one_second = datetime.timedelta(seconds = 1)
             before  = datetime.datetime.now()
             for r in results:
-                result = urlfetch.fetch(r.url,
-                                    headers={'User-Agent': 'gaeutilities cron - http://gaeutilities.appspot.com/'})
+                if re.search(':8080', r.url):
+                    r.url = re.sub(':8080', ':8081', r.url)
+                #result = urlfetch.fetch(r.url)
                 diff = datetime.datetime.now() - before
                 if int(diff.seconds) < 1:
                     result = urlfetch.fetch(r.url)
-                    if result.status_code == 200:
-                        r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
-                        r.put()
-                    else:
-                        pass
+                    #if result.status_code == 200:
+                    r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
+                    r.put()
+                    #else:
+                    #    pass
                 else:
-                    break'''
+                    break
 
     def add_cron(self, cron_string):
         cron = cron_string.split(" ")
@@ -122,7 +124,6 @@ class Cron(object):
         for el in cron:
             parse = parsers[el]
             cron[el] = parse(cron[el])
-
         return cron
 
     def _validate_type(self, v, t):
@@ -413,7 +414,7 @@ class Cron(object):
         # start with dow as per cron if dow and day are set
         # then dow is used if it comes before day. If dow
         # is *, then ignore it.
-        if cron["dow"] is not "*":
+        if str(cron["dow"]) != str("*"):
             # convert any integers to lists in order to easily compare values
             m = next_run.month
             while True:
@@ -457,6 +458,8 @@ class Cron(object):
                 next_run = next_run + one_hour
 
     def _calc_minute(self, next_run, cron):
+        one_minute = datetime.timedelta(minutes=1)
+
         m = next_run.month
         d = next_run.day
         h = next_run.hour
@@ -476,12 +479,13 @@ class Cron(object):
                 m = next_run.month
                 d = next_run.day
                 h = next_run.hour
-                one_minute = datetime.timedelta(minutes=1)
                 next_run = next_run + one_minute
 
     def _get_next_run(self, cron):
-        now = datetime.datetime.now()
-        next_run = now.replace(second=0)
+        one_minute = datetime.timedelta(minutes=1)
+        # go up 1 minute because it shouldn't happen right when added
+        now = datetime.datetime.now() + one_minute
+        next_run = now.replace(second=0, microsecond=0)
 
         # start with month, which will also help calculate year
         next_run = self._calc_month(next_run, cron)
