@@ -31,6 +31,7 @@ import datetime
 import pickle
 from google.appengine.ext import db
 from google.appengine.api import urlfetch
+from google.appengine.api import memcache
 
 class _AppEngineUtilities_Cron(db.Model):
     """
@@ -77,12 +78,11 @@ class Cron(object):
                 #result = urlfetch.fetch(r.url)
                 diff = datetime.datetime.now() - before
                 if int(diff.seconds) < 1:
-                    result = urlfetch.fetch(r.url)
-                    #if result.status_code == 200:
-                    r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
-                    r.put()
-                    #else:
-                    #    pass
+                    if memcache.add(str(r.key), "running"):
+                        result = urlfetch.fetch(r.url)
+                        r.next_run = self._get_next_run(pickle.loads(r.cron_compiled))
+                        r.put()
+                        memcache.delete(str(r.key))
                 else:
                     break
 
