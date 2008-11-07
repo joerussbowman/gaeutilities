@@ -1,5 +1,5 @@
 ====================================
-Cache
+=Cache=
 ====================================
 
 Cache is an object based storage mechanism which can be used to
@@ -11,15 +11,15 @@ Using Cache
 =================
 
 Make it available simply by importing the class, and initializing it.
-
+{{{
     from appengine_utilities.sessions import Cache
     self.cache = Cache()
-
+}}}
 Once initialized, you can use cache like any other dictionary object.
-
+{{{
     self.cache['meals'] = ['breakfast', 'lunch', 'dinner']
     self.cache['username'] = 'Bob'
-
+}}}
 All standard dictionary methods are implemented.
 
 How Cache objects are stored
@@ -34,8 +34,7 @@ Cache Arguments
 =================
 
 Cache take the following arguments on initializaion:
-        Args:
-            clean_check_percent: how often cache initialization should
-                run the cache cleanup
-            max_hits_to_clean: maximum number of stale hits to clean
-            default_timeout: default length a cache item is good for
+        * Args:
+            * clean_check_percent: how often cache initialization should run the cache cleanup
+            * max_hits_to_clean: maximum number of stale hits to clean
+            * default_timeout: default length a cache item is good for

@@ -33,6 +33,9 @@ from google.appengine.ext import db
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
 
+APPLICATION_PORT = '8080'
+CRON_PORT = '8081'
+
 class _AppEngineUtilities_Cron(db.Model):
     """
     Model for the tasks in the datastore. This contains the scheduling and
@@ -73,8 +76,8 @@ class Cron(object):
             one_second = datetime.timedelta(seconds = 1)
             before  = datetime.datetime.now()
             for r in results:
-                if re.search(':8080', r.url):
-                    r.url = re.sub(':8080', ':8081', r.url)
+                if re.search(':' + APPLICATION_PORT, r.url):
+                    r.url = re.sub(':' + APPLICATION_PORT, ':' + CRON_PORT, r.url)
                 #result = urlfetch.fetch(r.url)
                 diff = datetime.datetime.now() - before
                 if int(diff.seconds) < 1:

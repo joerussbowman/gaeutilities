@@ -1,5 +1,5 @@
 ====================================
-Event
+=Event=
 ====================================
 
 A simple publish/subscribe based event dispatcher
@@ -8,27 +8,28 @@ you must import it and __main__.
 
 Using Event
 =================
+{{{
     import __main__
 
     from appengine_utilities import event
-
+}}}
 Subscribing to an Event
 =================
-
+{{{
     AEU_Events.subscribe("myEventFired", self.myCallback, {"msg": "myEventFired was fired, and myCallback was launched."})
 
       def myCallback(self, msg):
         print msg
-
+}}}
 AEU_Events is set when you import __main__ and event. The above code uses
 it's subscribe method to have myCallback run whenever something fires
 "myEventFired", with the argument msg.
 
 Firing an Event
 =================
-
+{{{
     AEU_Events.fire_event("myEventFired")
-
+}}}
 When fire_event is used, all callbacks subscribed to myEventFired will
 then run, along with any additional arguments passed as part of the
 subscribe call.
@@ -45,19 +46,19 @@ Events included in other utilities
 Sessions and Cache both already include fire events if you import
 Event as well as them. The list is:
 
-    Sessions:
-        sessionInititalized: Fires after session intializtion.
-        sessionGetFromDatastore: Fires after a session retrieved from the datastore.
-        sessionDataGetFromDatastore: Fires after session data is retrieved from the datastore.
-        sessionDataGetFromMemcache: Fires after session data is retrieved from memcache.
-        sessionDataPut: Fires after session data is added.
-        sessionMemcacheUpdated: Fired every time memcache is updated. This happens anytime new session data is added and when data is retrieved from the datastore because it could not be found in memcache.
+    * Sessions:
+        * sessionInititalized: Fires after session intializtion.
+        * sessionGetFromDatastore: Fires after a session retrieved from the datastore.
+        * sessionDataGetFromDatastore: Fires after session data is retrieved from the datastore.
+        * sessionDataGetFromMemcache: Fires after session data is retrieved from memcache.
+        * sessionDataPut: Fires after session data is added.
+        * sessionMemcacheUpdated: Fired every time memcache is updated. This happens anytime new session data is added and when data is retrieved from the datastore because it could not be found in memcache.
 
-    Cache:
-        cacheInitialized: Fired after cache is initalized.
-        cacheAdded: Fired after a cache object is added.
-        cacheSet: Fired after a cache object is set.
-        cacheReadFromDatastore: Fired after a cache object is read from the datastore.
-        cacheReadFromMemcache: Fired after a cache object is read from memcache.
-        cacheRead: Fired after a cache object is read (regardless of source)
-        cacheDeleted: Fired after a cache object is deleted.
+    * Cache:
+        * cacheInitialized: Fired after cache is initalized.
+        * cacheAdded: Fired after a cache object is added.
+        * cacheSet: Fired after a cache object is set.
+        * cacheReadFromDatastore: Fired after a cache object is read from the datastore.
+        * cacheReadFromMemcache: Fired after a cache object is read from memcache.
+        * cacheRead: Fired after a cache object is read (regardless of source)
+        * cacheDeleted: Fired after a cache object is deleted.

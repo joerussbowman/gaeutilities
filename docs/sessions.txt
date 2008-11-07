@@ -1,5 +1,5 @@
 ====================================
-Sessions
+=Sessions=
 ====================================
 
 Sessions provides a way to manage storing data for users their visit
@@ -14,18 +14,18 @@ Using Sessions
 Make it available simply by importing the class, and initializing it.
 Session initializtion handles the reading and passing data to the
 browsers cookie store.
-
+{{{
     from appengine_utilities.sessions import Session
     self.session = Session()
-
+}}}
 Because sessions read and write cookie, you need to initalize the class
 before you send any output to the browser.
 
 Once initialized, you can use sessions like any other dictionary object.
-
+{{{
     self.session['meals'] = ['breakfast', 'lunch', 'dinner']
     self.session['username'] = 'Bob'
-
+}}}
 All standard dictionary methods are implemented.
 
 How Sessions Are Cached
@@ -49,25 +49,25 @@ Session Arguments
 
 Sessions take the following arguments on initializaion:
 
-        Args:
-          cookie_name: The name for the session cookie stored in the browser.
+        * Args:
+          * cookie_name: The name for the session cookie stored in the browser.
 
-          session_expire_time: The amount of time between requests before the
+          * session_expire_time: The amount of time between requests before the
               session expires.
 
-          clean_check_percent: The percentage of requests the will fire off a
+          * clean_check_percent: The percentage of requests the will fire off a
               cleaning routine that deletes stale session data.
 
-          integrate_flash: If appengine-utilities flash utility should be
+          * integrate_flash: If appengine-utilities flash utility should be
               integrated into the session object.
 
-          check_ip: If browser IP should be used for session validation
+          * check_ip: If browser IP should be used for session validation
 
-          check_user_agent: If the browser user agent should be used for
+          * check_user_agent: If the browser user agent should be used for
               sessoin validation.
 
-          set_cookie_expires: True adds an expires field to the cookie so
+          * set_cookie_expires: True adds an expires field to the cookie so
               it saves even if the browser is closed.
 
-          session_token_ttl: Number of sessions a session token is valid
+          * session_token_ttl: Number of sessions a session token is valid
               for before it should be regenerated.

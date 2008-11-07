@@ -12,6 +12,7 @@ handlers:
 
 - url: /gaeutilities/.*
   script: appengine_utilities/interface/main.py
+  login: admin
 
 - url: /.*
   script: main.py
