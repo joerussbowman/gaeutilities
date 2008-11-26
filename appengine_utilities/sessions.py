@@ -34,6 +34,7 @@ import sha
 import Cookie
 import pickle
 import __main__
+from time import strftime
 
 # google appengine imports
 from google.appengine.ext import db
@@ -199,6 +200,7 @@ class Session(object):
         # the session is accessed. This also handles the write for all
         # session data above.
         self.session.put()
+        self.no_cache_headers()
         print self.cookie
 
         # fire up a Flash object if integration is enabled
@@ -492,11 +494,29 @@ class Session(object):
             self.session_expire_time)
 
     def cycle_key(self):
+        """
+        Changes the session id.
+        """
         self.sid = self.new_sid()
         if len(self.session.sid) > 2:
             self.session.sid.remove(self.session.sid[0])
         self.session.sid.append(self.sid)
 
     def flush(self):
+        """
+        Delete's the current session, creating a new one.
+        """
         self._delete_session()
         self.__init__()
+
+    def no_cache_headers(self):
+        """
+        Adds headers, avoiding any page caching in the browser. Useful for highly
+        dynamic sites.
+        """
+        dt = datetime.datetime.now()
+        print "Expires: Tue, 03 Jul 2001 06:00:00 GMT"
+        print strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z")
+        print "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
+        print "Cache-Control: post-check=0, pre-check=0"
+        print "Pragma: no-cache"
