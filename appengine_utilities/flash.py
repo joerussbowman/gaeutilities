@@ -64,7 +64,8 @@ class Flash(object):
         """
         Load the flash message and clear the cookie.
         """
-        # load cookie
+        self.no_cache_headers()
+       # load cookie
         if cookie is None:
             browser_cookie = os.environ.get('HTTP_COOKIE', '')
             self.cookie = Cookie.SimpleCookie()
@@ -87,7 +88,6 @@ class Flash(object):
             self.cookie[COOKIE_NAME] = ''
             self.cookie[COOKIE_NAME]['path'] = '/'
             self.cookie[COOKIE_NAME]['expires'] = 0
-            self.no_cache_headers()
             print self.cookie
         else:
             # default 'msg' attribute to None
@@ -103,7 +103,6 @@ class Flash(object):
             self.__dict__['msg'] = value
             self.__dict__['cookie'][COOKIE_NAME] = simplejson.dumps(value)
             self.__dict__['cookie'][COOKIE_NAME]['path'] = '/'
-            self.no_cache_headers()
             print self.cookie
         else:
             raise ValueError('You can only set the "msg" attribute.')

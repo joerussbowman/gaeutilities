@@ -87,3 +87,7 @@ Changelog
  1.1
  - cron: added
  admin interface: a small piece added for cron, will be expanded to support all utilities where applicable
+
+ 1.2
+ - session and flash: added no_cache_headers() method that is called whenever either
+        class is loaded. This should stop any problems with browser caching.

@@ -135,6 +135,8 @@ class Session(object):
         self.set_cookie_expires = set_cookie_expires
         self.session_token_ttl = session_token_ttl
 
+        # make sure the page is not cached in the browser
+        self.no_cache_headers()
         """
         Check the cookie and, if necessary, create a new one.
         """
@@ -200,7 +202,6 @@ class Session(object):
         # the session is accessed. This also handles the write for all
         # session data above.
         self.session.put()
-        self.no_cache_headers()
         print self.cookie
 
         # fire up a Flash object if integration is enabled
