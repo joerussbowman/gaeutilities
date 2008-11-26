@@ -29,6 +29,7 @@ import os
 import sys
 import Cookie
 import pickle
+from time import strftime
 
 from django.utils import simplejson
 
@@ -86,6 +87,7 @@ class Flash(object):
             self.cookie[COOKIE_NAME] = ''
             self.cookie[COOKIE_NAME]['path'] = '/'
             self.cookie[COOKIE_NAME]['expires'] = 0
+            self.no_cache_headers()
             print self.cookie
         else:
             # default 'msg' attribute to None
@@ -101,6 +103,18 @@ class Flash(object):
             self.__dict__['msg'] = value
             self.__dict__['cookie'][COOKIE_NAME] = simplejson.dumps(value)
             self.__dict__['cookie'][COOKIE_NAME]['path'] = '/'
+            self.no_cache_headers()
             print self.cookie
         else:
             raise ValueError('You can only set the "msg" attribute.')
+
+    def no_cache_headers(self):
+        """
+        Adds headers, avoiding any page caching in the browser. Useful for highly
+        dynamic sites.
+        """
+        print "Expires: Tue, 03 Jul 2001 06:00:00 GMT"
+        print strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z")
+        print "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
+        print "Cache-Control: post-check=0, pre-check=0"
+        print "Pragma: no-cache"

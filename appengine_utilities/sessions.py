@@ -514,7 +514,6 @@ class Session(object):
         Adds headers, avoiding any page caching in the browser. Useful for highly
         dynamic sites.
         """
-        dt = datetime.datetime.now()
         print "Expires: Tue, 03 Jul 2001 06:00:00 GMT"
         print strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z")
         print "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
