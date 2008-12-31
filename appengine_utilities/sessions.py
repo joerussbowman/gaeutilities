@@ -50,7 +50,7 @@ from django.utils import simplejson
 COOKIE_NAME = 'appengine-utilities-session-sid'
 DEFAULT_COOKIE_PATH = '/'
 SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
-CLEAN_CHECK_PERCENT = 15 # 15% of all requests will clean the database
+CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
 INTEGRATE_FLASH = True # integrate functionality from flash module?
 CHECK_IP = True # validate sessions by IP
 CHECK_USER_AGENT = True # validate sessions by user agent
@@ -144,6 +144,7 @@ class Session(object):
         self.sid = None
         string_cookie = os.environ.get('HTTP_COOKIE', '')
         self.cookie = Cookie.SimpleCookie()
+        self.output_cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
         # check for existing cookie
         if self.cookie.get(cookie_name):
@@ -163,10 +164,10 @@ class Session(object):
                 else:
                     self.session.ip = None
                 self.session.sid = [self.sid]
-                self.cookie[cookie_name] = self.sid
-                self.cookie[cookie_name]['path'] = cookie_path
+                self.output_cookie[cookie_name] = self.sid
+                self.output_cookie[cookie_name]['path'] = cookie_path
                 if set_cookie_expires:
-                    self.cookie[cookie_name]['expires'] = \
+                    self.output_cookie[cookie_name]['expires'] = \
                         self.session_expire_time
             else:
                 # check the age of the token to determine if a new one
@@ -180,21 +181,23 @@ class Session(object):
                     self.session.sid.append(self.sid)
                 else:
                     self.sid = self.session.sid[-1]
-                self.cookie[cookie_name] = self.sid
-                self.cookie[cookie_name]['path'] = cookie_path
+                self.output_cookie[cookie_name] = self.sid
+                self.output_cookie[cookie_name]['path'] = cookie_path
                 if set_cookie_expires:
-                    self.cookie[cookie_name]['expires'] = \
+                    self.output_cookie[cookie_name]['expires'] = \
                         self.session_expire_time
         else:
             self.sid = self.new_sid()
             self.session = _AppEngineUtilities_Session()
-            self.session.ua = os.environ['HTTP_USER_AGENT']
-            self.session.ip = os.environ['REMOTE_ADDR']
+            if 'HTTP_USER_AGENT' in os.environ:
+                self.session.ua = os.environ['HTTP_USER_AGENT']
+            if 'REMOTE_ADDR' in os.environ:
+                    self.session.ip = os.environ['REMOTE_ADDR']
             self.session.sid = [self.sid]
-            self.cookie[cookie_name] = self.sid
-            self.cookie[cookie_name]['path'] = cookie_path
+            self.output_cookie[cookie_name] = self.sid
+            self.output_cookie[cookie_name]['path'] = cookie_path
             if set_cookie_expires:
-                self.cookie[cookie_name]['expires'] = self.session_expire_time
+                self.output_cookie[cookie_name]['expires'] = self.session_expire_time
 
         self.cache['sid'] = pickle.dumps(self.sid)
 
@@ -202,7 +205,8 @@ class Session(object):
         # the session is accessed. This also handles the write for all
         # session data above.
         self.session.put()
-        print self.cookie
+        #self.cookie.output()
+        print self.output_cookie.output()
 
         # fire up a Flash object if integration is enabled
         if self.integrate_flash:
@@ -362,7 +366,7 @@ class Session(object):
         session_age = datetime.datetime.now() - duration
         query = _AppEngineUtilities_Session.all()
         query.filter('last_activity <', session_age)
-        results = query.fetch(1000)
+        results = query.fetch(50)
         for result in results:
             data_query = _AppEngineUtilities_SessionData.all()
             query.filter('session', result)
@@ -520,3 +524,82 @@ class Session(object):
         print "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
         print "Cache-Control: post-check=0, pre-check=0"
         print "Pragma: no-cache"
+
+    def clear(self):
+        """
+        Remove all items
+        """
+        sessiondata = self._get()
+        # delete from datastore
+        if sessiondata is not None:
+            for sd in sessiondata:
+                sd.delete()
+        # delete from memcache
+        memcache.delete('sid-'+str(self.session.key()))
+
+    def has_key(self, keyname):
+        """
+        Equivalent to k in a, use that form in new code
+        """
+        return self.__contains__(keyname)
+
+    def items(self):
+        """
+        A copy of list of (key, value) pairs
+        """
+        return self._get()
+
+    def keys(self):
+        """
+        List of keys.
+        """
+        l = []
+        sessiondata = self._get()
+        if sessiondata is not None:
+            for sd in sessiondata:
+                l.append(sd)
+        return l
+
+    def update(*dicts):
+        """
+        Updates with key/value pairs from b, overwriting existing keys, returns None
+        """
+        for dict in dicts:
+            for k in dict:
+                self._put(k, dict[k])
+        return None
+
+    def values(self):
+        """
+        A copy list of values.
+        """
+        v = []
+        sessiondata = self._get()
+        if sessiondata is not None:
+            for sd in sessiondata:
+                v.append(sessiondata[sd])
+        return v
+
+    def get(self, keyname, default = None):
+        """
+        a[k] if k in a, else x
+        """
+        try:
+            return self.__getitem__(keyname)
+        except KeyError:
+            if default is not None:
+                return default
+            return None
+
+    def setdefault(self, keyname, default = None):
+        """
+        a[k] if k in a, else x (also setting it)
+        """
+        try:
+            return self.__getitem__(keyname)
+        except KeyError:
+            if default is not None:
+                self.__setitem__(keyname, default)
+                return default
+            return None
+

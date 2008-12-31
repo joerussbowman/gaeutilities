@@ -37,8 +37,8 @@ from google.appengine.api import memcache
 
 # settings
 DEFAULT_TIMEOUT = 3600 # cache expires after one hour (3600 sec)
-CLEAN_CHECK_PERCENT = 15 # 15% of all requests will clean the database
-MAX_HITS_TO_CLEAN = 1000 # the maximum number of cache hits to clean on attempt
+CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
+MAX_HITS_TO_CLEAN = 100 # the maximum number of cache hits to clean on attempt
 
 
 class _AppEngineUtilities_Cache(db.Model):

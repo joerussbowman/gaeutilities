@@ -88,7 +88,7 @@ class Flash(object):
             self.cookie[COOKIE_NAME] = ''
             self.cookie[COOKIE_NAME]['path'] = '/'
             self.cookie[COOKIE_NAME]['expires'] = 0
-            print self.cookie
+            print self.cookie[COOKIE_NAME]
         else:
             # default 'msg' attribute to None
             self.__dict__['msg'] = None

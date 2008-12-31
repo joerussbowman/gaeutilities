@@ -43,6 +43,15 @@ class FlashPage(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'templates/flash.html')
         self.response.out.write(template.render(path, template_values))
 
+class AjaxSessionPage(webapp.RequestHandler):
+  def get(self):
+    self.sess = sessions.Session()
+    if not 'viewCount' in self.sess:
+      self.sess['viewCount'] = 1
+    else:
+      self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+    self.response.out.write('viewcount is ' + str(self.sess['viewCount']))
+
 class SessionPage(webapp.RequestHandler):
   def get(self):
     self.sess = sessions.Session()
@@ -126,6 +135,7 @@ def main():
   application = webapp.WSGIApplication(
                                        [('/', MainPage),
                                        ('/session', SessionPage),
+                                       ('/ajaxsession', AjaxSessionPage),
                                        ('/flash', FlashPage),
                                        ('/event', EventPage),
                                        ('/cache', CachePage)],
