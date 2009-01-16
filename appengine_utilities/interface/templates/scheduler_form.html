@@ -13,7 +13,7 @@
 </tr>
 {% for cron in cron_entries %}
 <tr><td>{{ cron.cron_entry }}</td><td>{{ cron.next_run }}</td>
-<td><form action="" method="post"><input type="hidden" name="key" value="{{ cron.key }}"><input type="submit" name="action" value="Delete" /></td>
+<td><form action="" method="post"><input type="hidden" name="key" value="{{ cron.key }}"><input type="submit" name="action" value="Delete" /></form></td>
 </tr>
 {% endfor %}
 </table>
