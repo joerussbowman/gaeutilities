@@ -8,11 +8,12 @@
     <li><strong>cache: </strong>A simple to use caching system that utilizes both the datastore and memcache for storage.</li>
     <li><strong>flash: </strong>A cookie based messaging utility. Set a flash message to be displayed on the next request made by the user. This is also integrated into sessions.</li>
     <li><strong>event: </strong>A subscribe/fire event system. Events are included in sessions and cache which can be hooked into using this class.</li>
+    <li><strong>ROTModel: </strong>An extension of Google's db.Model that automatically retries put operations when db.Timeout is encountered.</li>
 </ul>
 </p>
 {% endblock %}
 {% block content %}
         <h2>Recent Updates</h2>
         <p><strong>[10/26/2008]</strong>Project renamed to gaeutilities. 1.0 release.</p>
-
+        <p><strong>[1/19/2009]</strong>1.1.1 Release, including nw ROTModel</p>
 {% endblock %}

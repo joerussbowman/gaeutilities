@@ -88,6 +88,12 @@ Changelog
  - cron: added
  admin interface: a small piece added for cron, will be expanded to support all utilities where applicable
 
- 1.2
+ 1.1.1
  - session and flash: added no_cache_headers() method that is called whenever either
         class is loaded. This should stop any problems with browser caching.
+ - ROTModel - new Model class added that retries put operations when db.Timeout is encountered.
+ - sessions and cache: Retuned the cleanup routines default settings. It will happen more often, but will delete less instances, lowering the amount of time required to run the operation in an effort to avoid deadline exceded errors in applications.
+ - session - uses the new ROTModel for both session and session data.
+ - session - rewrote the Cookie handling process to work better with other applications that use the cookies in applications, Google Analytics for example.
+ - cron - Fixed a bug in the form for deleting cron entries.
+ - Project - The 1.1 branch is now the suggested branch to use, 1.0 is being deprecated.
