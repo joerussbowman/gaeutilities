@@ -43,6 +43,7 @@ from google.appengine.api import memcache
 #django simplejson import, used for flash
 from django.utils import simplejson
 
+from rotmodel import ROTModel
 
 # settings, if you have these set elsewhere, such as your django settings file,
 # you'll need to adjust the values to pull from there.
@@ -58,7 +59,7 @@ SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
 SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
 
 
-class _AppEngineUtilities_Session(db.Model):
+class _AppEngineUtilities_Session(ROTModel):
     """
     Model for the sessions in the datastore. This contains the identifier and
     validation information for the session.
@@ -70,7 +71,7 @@ class _AppEngineUtilities_Session(db.Model):
     last_activity = db.DateTimeProperty(auto_now=True)
 
 
-class _AppEngineUtilities_SessionData(db.Model):
+class _AppEngineUtilities_SessionData(ROTModel):
     """
     Model for the session data in the datastore.
     """
