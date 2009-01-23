@@ -57,7 +57,8 @@ CHECK_IP = True # validate sessions by IP
 CHECK_USER_AGENT = True # validate sessions by user agent
 SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
 SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
-
+UPDATE_LAST_ACTIVITY = 60 # Number of seconds that may pass before
+                          # last_activity is updated
 
 class _AppEngineUtilities_Session(ROTModel):
     """
@@ -105,7 +106,8 @@ class Session(object):
             integrate_flash=INTEGRATE_FLASH, check_ip=CHECK_IP,
             check_user_agent=CHECK_USER_AGENT,
             set_cookie_expires=SET_COOKIE_EXPIRES,
-            session_token_ttl=SESSION_TOKEN_TTL):
+            session_token_ttl=SESSION_TOKEN_TTL,
+            last_activity_update=UPDATE_LAST_ACTIVITY):
         """
         Initializer
 
@@ -135,6 +137,7 @@ class Session(object):
         self.check_ip = check_ip
         self.set_cookie_expires = set_cookie_expires
         self.session_token_ttl = session_token_ttl
+        self.last_activity_update = last_activity_update
 
         # make sure the page is not cached in the browser
         self.no_cache_headers()
@@ -147,10 +150,13 @@ class Session(object):
         self.cookie = Cookie.SimpleCookie()
         self.output_cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
+        # do_put is used to determine if a datastore write should
+        # happen on this request.
+        do_put = False
         # check for existing cookie
         if self.cookie.get(cookie_name):
             self.sid = self.cookie[cookie_name].value
-            # If there isn't a valid session for the cookie sid,
+            # If there isn't a valid session for the cookie sid
             # start a new session.
             self.session = self._get_session()
             if self.session is None:
@@ -170,6 +176,7 @@ class Session(object):
                 if set_cookie_expires:
                     self.output_cookie[cookie_name]['expires'] = \
                         self.session_expire_time
+                do_put = True
             else:
                 # check the age of the token to determine if a new one
                 # is required
@@ -180,6 +187,7 @@ class Session(object):
                     if len(self.session.sid) > 2:
                         self.session.sid.remove(self.session.sid[0])
                     self.session.sid.append(self.sid)
+                    do_put = True
                 else:
                     self.sid = self.session.sid[-1]
                 self.output_cookie[cookie_name] = self.sid
@@ -187,6 +195,10 @@ class Session(object):
                 if set_cookie_expires:
                     self.output_cookie[cookie_name]['expires'] = \
                         self.session_expire_time
+                # check if last_activity needs updated
+                ula = datetime.timedelta(seconds=self.last_activity_update)
+                if datetime.datetime.now() < self.session.last_activity + ula:
+                    do_put = True
         else:
             self.sid = self.new_sid()
             self.session = _AppEngineUtilities_Session()
@@ -199,14 +211,13 @@ class Session(object):
             self.output_cookie[cookie_name]['path'] = cookie_path
             if set_cookie_expires:
                 self.output_cookie[cookie_name]['expires'] = self.session_expire_time
+            do_put = True
 
         self.cache['sid'] = pickle.dumps(self.sid)
 
-        # update the last_activity field in the datastore every time that
-        # the session is accessed. This also handles the write for all
-        # session data above.
-        self.session.put()
-        #self.cookie.output()
+        # update datastore if necessary, and write out new cookie
+        if do_put:
+            self.session.put()
         print self.output_cookie.output()
 
         # fire up a Flash object if integration is enabled
