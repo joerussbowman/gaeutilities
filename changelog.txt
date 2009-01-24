@@ -97,3 +97,7 @@ Changelog
  - session - rewrote the Cookie handling process to work better with other applications that use the cookies in applications, Google Analytics for example.
  - cron - Fixed a bug in the form for deleting cron entries.
  - Project - The 1.1 branch is now the suggested branch to use, 1.0 is being deprecated.
+ 
+ 1.1.2
+ - session: Added last_activity_update variable to set an interval for which last_activity needs to be updated. It defaults to 60 seconds. This means a put is not required every request which should increase performance.
+ - session: Refactored based on a contribution from Jeremy Awon optimizing the class initialization.

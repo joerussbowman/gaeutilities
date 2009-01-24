@@ -48,7 +48,8 @@ from rotmodel import ROTModel
 # settings, if you have these set elsewhere, such as your django settings file,
 # you'll need to adjust the values to pull from there.
 
-COOKIE_NAME = 'appengine-utilities-session-sid'
+COOKIE_NAME = 'appengine-utilities-session-sid' # session token
+BU_COOKIE_NAME = 'appengine-utilities-session-busid' # backup session token
 DEFAULT_COOKIE_PATH = '/'
 SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
 CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
@@ -101,7 +102,8 @@ class Session(object):
     """
 
     def __init__(self, cookie_path=DEFAULT_COOKIE_PATH,
-            cookie_name=COOKIE_NAME, session_expire_time=SESSION_EXPIRE_TIME,
+            cookie_name=COOKIE_NAME, bu_cookie_name=BU_COOKIE_NAME,
+            session_expire_time=SESSION_EXPIRE_TIME,
             clean_check_percent=CLEAN_CHECK_PERCENT,
             integrate_flash=INTEGRATE_FLASH, check_ip=CHECK_IP,
             check_user_agent=CHECK_USER_AGENT,
@@ -130,6 +132,7 @@ class Session(object):
 
         self.cookie_path = cookie_path
         self.cookie_name = cookie_name
+        self.bu_cookie_name = cookie_name
         self.session_expire_time = session_expire_time
         self.clean_check_percent = clean_check_percent
         self.integrate_flash = integrate_flash
@@ -141,83 +144,71 @@ class Session(object):
 
         # make sure the page is not cached in the browser
         self.no_cache_headers()
-        """
-        Check the cookie and, if necessary, create a new one.
-        """
+        # Check the cookie and, if necessary, create a new one.
         self.cache = {}
         self.sid = None
         string_cookie = os.environ.get('HTTP_COOKIE', '')
         self.cookie = Cookie.SimpleCookie()
         self.output_cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
+
         # do_put is used to determine if a datastore write should
         # happen on this request.
         do_put = False
+
         # check for existing cookie
         if self.cookie.get(cookie_name):
             self.sid = self.cookie[cookie_name].value
-            # If there isn't a valid session for the cookie sid
-            # start a new session.
-            self.session = self._get_session()
-            if self.session is None:
-                self.sid = self.new_sid()
-                self.session = _AppEngineUtilities_Session()
-                if 'HTTP_USER_AGENT' in os.environ:
-                    self.session.ua = os.environ['HTTP_USER_AGENT']
-                else:
-                    self.session.ua = None
-                if 'REMOTE_ADDR' in os.environ:
-                    self.session.ip = os.environ['REMOTE_ADDR']
-                else:
-                    self.session.ip = None
-                self.session.sid = [self.sid]
-                self.output_cookie[cookie_name] = self.sid
-                self.output_cookie[cookie_name]['path'] = cookie_path
-                if set_cookie_expires:
-                    self.output_cookie[cookie_name]['expires'] = \
-                        self.session_expire_time
-                do_put = True
-            else:
-                # check the age of the token to determine if a new one
-                # is required
-                duration = datetime.timedelta(seconds=self.session_token_ttl)
-                session_age_limit = datetime.datetime.now() - duration
-                if self.session.last_activity < session_age_limit:
-                    self.sid = self.new_sid()
-                    if len(self.session.sid) > 2:
-                        self.session.sid.remove(self.session.sid[0])
-                    self.session.sid.append(self.sid)
-                    do_put = True
-                else:
-                    self.sid = self.session.sid[-1]
-                self.output_cookie[cookie_name] = self.sid
-                self.output_cookie[cookie_name]['path'] = cookie_path
-                if set_cookie_expires:
-                    self.output_cookie[cookie_name]['expires'] = \
-                        self.session_expire_time
-                # check if last_activity needs updated
-                ula = datetime.timedelta(seconds=self.last_activity_update)
-                if datetime.datetime.now() < self.session.last_activity + ula:
-                    do_put = True
+            self.session = self._get_session() # will return None if
+                                               # sid expired
         else:
+            self.sid = self.new_sid()
+            self.session = None
+
+        if self.session is None:
+            # start a new session if there is None.
             self.sid = self.new_sid()
             self.session = _AppEngineUtilities_Session()
             if 'HTTP_USER_AGENT' in os.environ:
                 self.session.ua = os.environ['HTTP_USER_AGENT']
+            else:
+                self.session.ua = None
             if 'REMOTE_ADDR' in os.environ:
-                    self.session.ip = os.environ['REMOTE_ADDR']
+                self.session.ip = os.environ['REMOTE_ADDR']
+            else:
+                self.session.ip = None
             self.session.sid = [self.sid]
-            self.output_cookie[cookie_name] = self.sid
-            self.output_cookie[cookie_name]['path'] = cookie_path
-            if set_cookie_expires:
-                self.output_cookie[cookie_name]['expires'] = self.session_expire_time
             do_put = True
+        else:
+            # check the age of the token to determine if a new one
+            # is required
+            duration = datetime.timedelta(seconds=self.session_token_ttl)
+            session_age_limit = datetime.datetime.now() - duration
+            if self.session.last_activity < session_age_limit:
+                self.sid = self.new_sid()
+                if len(self.session.sid) > 2:
+                    self.session.sid.remove(self.session.sid[0])
+                self.session.sid.append(self.sid)
+                do_put = True
+            else:
+                self.sid = self.session.sid[-1]
+                # check if last_activity needs updated
+                ula = datetime.timedelta(seconds=self.last_activity_update)
+                if datetime.datetime.now() < self.session.last_activity + ula:
+                    do_put = True
+
+        self.output_cookie[cookie_name] = self.sid
+        self.output_cookie[cookie_name]['path'] = cookie_path
+        if set_cookie_expires:
+            self.output_cookie[cookie_name]['expires'] = \
+                self.session_expire_time
 
         self.cache['sid'] = pickle.dumps(self.sid)
 
-        # update datastore if necessary, and write out new cookie
         if do_put:
             self.session.put()
+
+        #self.cookie.output()
         print self.output_cookie.output()
 
         # fire up a Flash object if integration is enabled
@@ -228,7 +219,7 @@ class Session(object):
         # randomly delete old stale sessions in the datastore (see
         # CLEAN_CHECK_PERCENT variable)
         if random.randint(1, 100) < CLEAN_CHECK_PERCENT:
-            self._clean_old_sessions()
+            self._clean_old_sessions() 
 
     def new_sid(self):
         """
