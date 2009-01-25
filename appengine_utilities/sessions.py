@@ -49,7 +49,6 @@ from rotmodel import ROTModel
 # you'll need to adjust the values to pull from there.
 
 COOKIE_NAME = 'appengine-utilities-session-sid' # session token
-BU_COOKIE_NAME = 'appengine-utilities-session-busid' # backup session token
 DEFAULT_COOKIE_PATH = '/'
 SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
 CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
@@ -102,7 +101,7 @@ class Session(object):
     """
 
     def __init__(self, cookie_path=DEFAULT_COOKIE_PATH,
-            cookie_name=COOKIE_NAME, bu_cookie_name=BU_COOKIE_NAME,
+            cookie_name=COOKIE_NAME,
             session_expire_time=SESSION_EXPIRE_TIME,
             clean_check_percent=CLEAN_CHECK_PERCENT,
             integrate_flash=INTEGRATE_FLASH, check_ip=CHECK_IP,
@@ -132,7 +131,6 @@ class Session(object):
 
         self.cookie_path = cookie_path
         self.cookie_name = cookie_name
-        self.bu_cookie_name = cookie_name
         self.session_expire_time = session_expire_time
         self.clean_check_percent = clean_check_percent
         self.integrate_flash = integrate_flash
@@ -166,7 +164,7 @@ class Session(object):
             self.session = None
 
         if self.session is None:
-            # start a new session if there is None.
+            # start a new session
             self.sid = self.new_sid()
             self.session = _AppEngineUtilities_Session()
             if 'HTTP_USER_AGENT' in os.environ:
@@ -178,7 +176,8 @@ class Session(object):
             else:
                 self.session.ip = None
             self.session.sid = [self.sid]
-            do_put = True
+            # do put() here to get the session key
+            key = self.session.put()
         else:
             # check the age of the token to determine if a new one
             # is required
