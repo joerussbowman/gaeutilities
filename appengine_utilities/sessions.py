@@ -51,7 +51,7 @@ from rotmodel import ROTModel
 COOKIE_NAME = 'appengine-utilities-session-sid' # session token
 DEFAULT_COOKIE_PATH = '/'
 SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
-CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
+CLEAN_CHECK_PERCENT = 50 # By default, 50% of all requests will clean the database
 INTEGRATE_FLASH = True # integrate functionality from flash module?
 CHECK_IP = True # validate sessions by IP
 CHECK_USER_AGENT = True # validate sessions by user agent
@@ -132,7 +132,6 @@ class Session(object):
         self.cookie_path = cookie_path
         self.cookie_name = cookie_name
         self.session_expire_time = session_expire_time
-        self.clean_check_percent = clean_check_percent
         self.integrate_flash = integrate_flash
         self.check_user_agent = check_user_agent
         self.check_ip = check_ip
@@ -217,7 +216,7 @@ class Session(object):
 
         # randomly delete old stale sessions in the datastore (see
         # CLEAN_CHECK_PERCENT variable)
-        if random.randint(1, 100) < CLEAN_CHECK_PERCENT:
+        if random.randint(1, 100) < clean_check_percent:
             self._clean_old_sessions() 
 
     def new_sid(self):
@@ -371,7 +370,7 @@ class Session(object):
         results = query.fetch(50)
         for result in results:
             data_query = _AppEngineUtilities_SessionData.all()
-            query.filter('session', result)
+            data_query.filter('session', result)
             data_results = data_query.fetch(1000)
             for data_result in data_results:
                 data_result.delete()
