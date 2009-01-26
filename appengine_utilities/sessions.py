@@ -345,7 +345,7 @@ class Session(object):
                 all_sessions_deleted = True
             else:
                 for result in results:
-		    memcache.delete('sid-'+str(result.key())
+#                    memcache.delete('sid-'+str(result.key())
                     result.delete()
 
         while not all_data_deleted:
