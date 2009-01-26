@@ -15,5 +15,14 @@
 {% block content %}
         <h2>Recent Updates</h2>
         <p><strong>[10/26/2008]</strong>Project renamed to gaeutilities. 1.0 release.</p>
-        <p><strong>[1/19/2009]</strong>1.1.1 Release, including nw ROTModel</p>
+        <p><strong>[1/19/2009]</strong>1.1.1 Release, including new ROTModel</p>
+        <p><strong>[1/26/2009]</strong>1.1.2 Release<br />
+   	 - session: Added last_activity_update variable to set an interval for which last_activity needs to be updated. It defaults to 60 seconds. This means a put is not 
+required every request which should increase performance.<br />
+ - session: Refactored based on a contribution from Jeremy Awon optimizing the class initialization.<br />
+ - session: Bug found in the process to clear old sessions that was deleting data it shouldn't be. This was the cause of the mysterious missing session data bug. Thank you 
+pant.lalit<br />
+ - session: Bug fixed where clean_check_percent was being ignored.<br />
+ - session: Some tweaks done to delete_all_session(), though this feature shouldn't be considered complete yet. Needs more testing.<br />
+</p>
 {% endblock %}

@@ -340,16 +340,17 @@ class Session(object):
 
         while not all_sessions_deleted:
             query = _AppEngineUtilities_Session.all()
-            results = query.fetch(1000)
+            results = query.fetch(75)
             if len(results) is 0:
                 all_sessions_deleted = True
             else:
                 for result in results:
+		    memcache.delete('sid-'+str(result.key())
                     result.delete()
 
         while not all_data_deleted:
             query = _AppEngineUtilities_SessionData.all()
-            results = query.fetch(1000)
+            results = query.fetch(75)
             if len(results) is 0:
                 all_data_deleted = True
             else:
