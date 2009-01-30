@@ -104,3 +104,6 @@ Changelog
  - session: Bug found in the process to clear old sessions that was deleting data it shouldn't be. This was the cause of the mysterious missing session data bug. Thank you pant.lalit 
  - session: Bug fixed where clean_check_percent was being ignored.
  - session: Some tweaks done to delete_all_session(), though this feature shouldn't be considered complete yet. Needs more testing.
+
+1.1.3
+ - session: bugfix to handle str() and len() methods when there is no session data

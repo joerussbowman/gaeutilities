@@ -450,7 +450,10 @@ class Session(object):
         if mc is not None:
             return len(mc)
         results = self._get()
-        return len(results)
+        if results is not None:
+            return len(results)
+        else:
+            return 0
 
     def __contains__(self, keyname):
         """
@@ -482,7 +485,10 @@ class Session(object):
         """
         Return string representation.
         """
-        return ', '.join(['("%s" = "%s")' % (k, self[k]) for k in self])
+        if self._get():
+            return ', '.join(['("%s" = "%s")' % (k, self[k]) for k in self])
+        else:
+            return []
 
     def _set_memcache(self):
         """
