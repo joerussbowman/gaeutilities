@@ -331,7 +331,8 @@ class Session(object):
         """
         self._delete_session()
 
-    def delete_all_sessions(self):
+    @classmethod
+    def delete_all_sessions(cls):
         """
         Deletes all sessions and session data from the data store and memcache.
         """
