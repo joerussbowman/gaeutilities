@@ -149,6 +149,8 @@ class Session(object):
         self.output_cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
 
+        new_session = True
+
         # do_put is used to determine if a datastore write should
         # happen on this request.
         do_put = False
@@ -158,11 +160,15 @@ class Session(object):
             self.sid = self.cookie[cookie_name].value
             self.session = self._get_session() # will return None if
                                                # sid expired
+            if self.session:
+                new_session = False
         else:
+            # create and put a new session to get the key initialized
+            self.session = _AppEngineUtilities_Session()
+            self.session.put()
             self.sid = self.new_sid()
-            self.session = None
 
-        if self.session is None:
+        if new_session:
             # start a new session
             self.sid = self.new_sid()
             self.session = _AppEngineUtilities_Session()
@@ -223,7 +229,8 @@ class Session(object):
         """
         Create a new session id.
         """
-        sid = sha.new(repr(time.time()) + os.environ['REMOTE_ADDR'] + \
+        sid = str(self.session.key()) + sha.new(repr(time.time()) + \
+		os.environ['REMOTE_ADDR'] + \
                 str(random.random())).hexdigest()
         return sid
 
