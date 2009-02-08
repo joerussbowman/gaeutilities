@@ -198,7 +198,7 @@ class Session(object):
                 self.sid = self.session.sid[-1]
                 # check if last_activity needs updated
                 ula = datetime.timedelta(seconds=self.last_activity_update)
-                if datetime.datetime.now() < self.session.last_activity + ula:
+                if datetime.datetime.now() > self.session.last_activity + ula:
                     do_put = True
 
         self.output_cookie[cookie_name] = self.sid
