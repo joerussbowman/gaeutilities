@@ -30,7 +30,7 @@ import os
 import time
 import datetime
 import random
-import sha
+import md5
 import Cookie
 import pickle
 import __main__
@@ -229,7 +229,7 @@ class Session(object):
         """
         Create a new session id.
         """
-        sid = str(self.session.key()) + sha.new(repr(time.time()) + \
+        sid = str(self.session.key()) + md5.new(repr(time.time()) + \
 		os.environ['REMOTE_ADDR'] + \
                 str(random.random())).hexdigest()
         return sid

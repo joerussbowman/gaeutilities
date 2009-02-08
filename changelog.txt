@@ -106,4 +106,8 @@ Changelog
  - session: Some tweaks done to delete_all_session(), though this feature shouldn't be considered complete yet. Needs more testing.
 
 1.1.3
- - session: bugfix to handle str() and len() methods when there is no session data
+ - session: bugfix to handle str() and len() methods when there is no session data. Issue #12
+ - session: delete_all_sessions changed to a class method. Issue #14 (NOTE: delete_all_sessions is not complete)
+ - session: Modified session token to include the session key. Issue #10
+ - session: Session token encryption changed to md5 from sha1, in order to improve performance as the salt is randomized with a time string.
+

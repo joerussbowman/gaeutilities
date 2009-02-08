@@ -8,7 +8,7 @@
     {% if sess.flash %}
     <p>{{ sess.flash }}</p>
     {% endif %}
-    <p> Welcome to the sessions demo. You've viewed this page <strong>{{ sess.viewCount }}</strong> times during this session. You session id is <strong>{{ sess.sid }}</strong> There are {{ session_length }} objects in your session data. The keys are: <ul>
+    <p> Welcome to the sessions demo. You've viewed this page <strong>{{ sess.viewCount }}</strong> times during this session. Your session id is <strong>{{ sess.sid }}</strong> There are {{ session_length }} objects in your session data. The keys are: <ul>
 {% for k in sess %}
 <li>{{ k }}</li>
 {% endfor %}
