@@ -59,6 +59,8 @@ SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
 SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
 UPDATE_LAST_ACTIVITY = 60 # Number of seconds that may pass before
                           # last_activity is updated
+WRITER = "datastore" # Use the datastore writer by default. cookie is the
+                     # other option.
 
 class _AppEngineUtilities_Session(ROTModel):
     """
@@ -81,6 +83,63 @@ class _AppEngineUtilities_SessionData(ROTModel):
     keyname = db.StringProperty()
     content = db.BlobProperty()
 
+class _DatastoreWriter(object):
+
+    def put(self, keyname, value, session):
+        """
+        Insert a keyname/value pair into the datastore for the session.
+
+        Args:
+            keyname: The keyname of the mapping.
+            value: The value of the mapping.
+        """
+        keyname = session._validate_key(keyname)
+        if value is None:
+            raise ValueError('You must pass a value to put.')
+
+        # datestore write trumps cookie. If there is a cookie value
+        # with this keyname, delete it so we don't have conflicting
+        # entries.
+        if session.cookie_vals.has_key(keyname):
+            del(cookie_vals[keyname])
+            session.output_cookie[session.cookie_name + '_data'] = \
+                simplejson.dumps(session.cookie_vals)
+            print session.output_cookie.output()
+
+        sessdata = session._get(keyname=keyname)
+        if sessdata is None:
+            sessdata = _AppEngineUtilities_SessionData()
+            sessdata.session = session.session
+            sessdata.keyname = keyname
+        sessdata.content = pickle.dumps(value)
+        session.cache[keyname] = pickle.dumps(value)
+        sessdata.put()
+        session._set_memcache()
+
+
+class _CookieWriter(object):
+    def _put(self, keyname, value, session):
+        """
+        Insert a keyname/value pair into the datastore for the session.
+
+        Args:
+            keyname: The keyname of the mapping.
+            value: The value of the mapping.
+        """
+        keyname = session._validate_key(keyname)
+        if value is None:
+            raise ValueError('You must pass a value to put.')
+
+        # Use simplejson for cookies instead of pickle.
+        # TODO: There should be a cookie that uses json for
+        #       formatting for all cookie sessiondata
+        #       values.
+        session.cookie_vals[keyname] = value
+        # update the requests session cache as well.
+        session.cache[keyname] = value
+        session.output_cookie[session.cookie_name + '_data'] = \
+            simplejson.dumps(session.cookie_vals)
+        print session.output_cookie.output()
 
 class Session(object):
     """
@@ -108,7 +167,8 @@ class Session(object):
             check_user_agent=CHECK_USER_AGENT,
             set_cookie_expires=SET_COOKIE_EXPIRES,
             session_token_ttl=SESSION_TOKEN_TTL,
-            last_activity_update=UPDATE_LAST_ACTIVITY):
+            last_activity_update=UPDATE_LAST_ACTIVITY,
+            writer=WRITER):
         """
         Initializer
 
@@ -138,81 +198,92 @@ class Session(object):
         self.set_cookie_expires = set_cookie_expires
         self.session_token_ttl = session_token_ttl
         self.last_activity_update = last_activity_update
+        self.writer = writer
 
         # make sure the page is not cached in the browser
         self.no_cache_headers()
         # Check the cookie and, if necessary, create a new one.
         self.cache = {}
-        self.sid = None
         string_cookie = os.environ.get('HTTP_COOKIE', '')
         self.cookie = Cookie.SimpleCookie()
         self.output_cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
+        try:
+            self.cookie_vals = \
+                simplejson.loads(self.cookie[self.cookie_name + '_data'])
+                # sync self.cache and self.cookie_vals which will make those
+                # values available for all gets immediately.
+            self.cache = self.cookie_vals
+        except:
+            self.cookie_vals = {}
 
-        new_session = True
-
-        # do_put is used to determine if a datastore write should
-        # happen on this request.
-        do_put = False
-
-        # check for existing cookie
-        if self.cookie.get(cookie_name):
-            self.sid = self.cookie[cookie_name].value
-            self.session = self._get_session() # will return None if
-                                               # sid expired
-            if self.session:
-                new_session = False
+        if writer == "cookie":
+            pass
         else:
-            # create and put a new session to get the key initialized
-            self.session = _AppEngineUtilities_Session()
-            self.session.put()
-            self.sid = self.new_sid()
+            self.sid = None
+            new_session = True
 
-        if new_session:
-            # start a new session
-            self.sid = self.new_sid()
-            self.session = _AppEngineUtilities_Session()
-            if 'HTTP_USER_AGENT' in os.environ:
-                self.session.ua = os.environ['HTTP_USER_AGENT']
+            # do_put is used to determine if a datastore write should
+            # happen on this request.
+            do_put = False
+
+            # check for existing cookie
+            if self.cookie.get(cookie_name):
+                self.sid = self.cookie[cookie_name].value
+                self.session = self._get_session() # will return None if
+                                                # sid expired
+                if self.session:
+                    new_session = False
             else:
-                self.session.ua = None
-            if 'REMOTE_ADDR' in os.environ:
-                self.session.ip = os.environ['REMOTE_ADDR']
-            else:
-                self.session.ip = None
-            self.session.sid = [self.sid]
-            # do put() here to get the session key
-            key = self.session.put()
-        else:
-            # check the age of the token to determine if a new one
-            # is required
-            duration = datetime.timedelta(seconds=self.session_token_ttl)
-            session_age_limit = datetime.datetime.now() - duration
-            if self.session.last_activity < session_age_limit:
+                # create and put a new session to get the key initialized
+                self.session = _AppEngineUtilities_Session()
+                self.session.put()
                 self.sid = self.new_sid()
-                if len(self.session.sid) > 2:
-                    self.session.sid.remove(self.session.sid[0])
-                self.session.sid.append(self.sid)
-                do_put = True
-            else:
-                self.sid = self.session.sid[-1]
-                # check if last_activity needs updated
-                ula = datetime.timedelta(seconds=self.last_activity_update)
-                if datetime.datetime.now() > self.session.last_activity + ula:
-                    do_put = True
 
-        self.output_cookie[cookie_name] = self.sid
-        self.output_cookie[cookie_name]['path'] = cookie_path
+            if new_session:
+                # start a new session
+                self.sid = self.new_sid()
+                self.session = _AppEngineUtilities_Session()
+                if 'HTTP_USER_AGENT' in os.environ:
+                    self.session.ua = os.environ['HTTP_USER_AGENT']
+                else:
+                    self.session.ua = None
+                if 'REMOTE_ADDR' in os.environ:
+                    self.session.ip = os.environ['REMOTE_ADDR']
+                else:
+                    self.session.ip = None
+                self.session.sid = [self.sid]
+                # do put() here to get the session key
+                key = self.session.put()
+            else:
+                # check the age of the token to determine if a new one
+                # is required
+                duration = datetime.timedelta(seconds=self.session_token_ttl)
+                session_age_limit = datetime.datetime.now() - duration
+                if self.session.last_activity < session_age_limit:
+                    self.sid = self.new_sid()
+                    if len(self.session.sid) > 2:
+                        self.session.sid.remove(self.session.sid[0])
+                    self.session.sid.append(self.sid)
+                    do_put = True
+                else:
+                    self.sid = self.session.sid[-1]
+                    # check if last_activity needs updated
+                    ula = datetime.timedelta(seconds=self.last_activity_update)
+                    if datetime.datetime.now() > self.session.last_activity + ula:
+                        do_put = True
+
+            self.output_cookie[cookie_name] = self.sid
+            self.output_cookie[cookie_name]['path'] = cookie_path
+
+            self.cache['sid'] = pickle.dumps(self.sid)
+
+            if do_put:
+                self.session.put()
+
         if set_cookie_expires:
             self.output_cookie[cookie_name]['expires'] = \
                 self.session_expire_time
-
-        self.cache['sid'] = pickle.dumps(self.sid)
-
-        if do_put:
-            self.session.put()
-
-        #self.cookie.output()
         print self.output_cookie.output()
 
         # fire up a Flash object if integration is enabled
@@ -256,10 +327,12 @@ class Session(object):
 
     def _get(self, keyname=None):
         """
-        Return all of the SessionData object unless keyname is specified, in
-        which case only that instance of SessionData is returned.
+        Return all of the SessionData object data from the datastore onlye,
+        unless keyname is specified, in which case only that instance of 
+        SessionData is returned.
         Important: This does not interact with memcache and pulls directly
-        from the datastore.
+        from the datastore. This also does not get items from the cookie
+        store.
 
         Args:
             keyname: The keyname of the value you are trying to retrieve.
@@ -298,23 +371,16 @@ class Session(object):
             keyname: The keyname of the mapping.
             value: The value of the mapping.
         """
-        keyname = self._validate_key(keyname)
- 
-        if value is None:
-            raise ValueError('You must pass a value to put.')
-        sessdata = self._get(keyname=keyname)
-        if sessdata is None:
-            sessdata = _AppEngineUtilities_SessionData()
-            sessdata.session = self.session
-            sessdata.keyname = keyname
-        sessdata.content = pickle.dumps(value)
-        self.cache[keyname] = pickle.dumps(value)
-        sessdata.put()
-        self._set_memcache()
+        if self.writer == "datastore":
+            writer = _DatastoreWriter()
+        else:
+            writer = _CookieWriter()
+
+        writer.put(keyname, value, self)
 
     def _delete_session(self):
         """
-        Delete the session and all session data for the sid passed.
+        Delete the session and all session data.
         """
         sessiondata = self._get()
         # delete from datastore
@@ -325,6 +391,12 @@ class Session(object):
         memcache.delete('sid-'+str(self.session.key()))
         # delete the session now that all items that reference it are deleted.
         self.session.delete()
+        # unset any cookie values that may exist
+        self.cookie_vals = {}
+        self.output_cookie[self.cookie_name + '_data'] = \
+            simplejson.dumps(self.cookie_vals)
+        print self.output_cookie.output()
+
         # if the event class has been loaded, fire off the sessionDeleted event
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('sessionDelete')
@@ -341,7 +413,11 @@ class Session(object):
     @classmethod
     def delete_all_sessions(cls):
         """
-        Deletes all sessions and session data from the data store and memcache.
+        Deletes all sessions and session data from the data store and memcache:
+
+        NOTE: This is not fully developed. It also will not delete any cookie
+        data as this does not work for each incoming request. Keep this in mind
+        if you are using the cookie writer.
         """
         all_sessions_deleted = False
         all_data_deleted = False
@@ -400,6 +476,8 @@ class Session(object):
             return self.flash.msg
         if keyname in self.cache:
             return pickle.loads(str(self.cache[keyname]))
+        if keyname in self.cookie_vals:
+            return self.cookie_vals[keyname]
         mc = memcache.get('sid-'+str(self.session.key()))
         if mc is not None:
             if keyname in mc:
@@ -441,10 +519,17 @@ class Session(object):
         Args:
             keyname: The keyname of the object to delete.
         """
+        bad_key = False
         sessdata = self._get(keyname = keyname)
         if sessdata is None:
+            bad_key = True
+        else:
+            sessdata.delete()
+        if keyname in self.cookie_vals:
+            del self.cookie_vals[keyname]
+            bad_key = False
+        if bad_key:
             raise KeyError(str(keyname))
-        sessdata.delete()
         if keyname in self.cache:
             del self.cache[keyname]
         self._set_memcache()
@@ -456,10 +541,10 @@ class Session(object):
         # check memcache first
         mc = memcache.get('sid-'+str(self.session.key()))
         if mc is not None:
-            return len(mc)
+            return len(mc) + len(self.cookie_vals)
         results = self._get()
         if results is not None:
-            return len(results)
+            return len(results) + len(self.cookie_vals)
         else:
             return 0
 
@@ -488,6 +573,8 @@ class Session(object):
         else:
             for k in self._get():
                 yield k.keyname
+        for k in self.cookie_vals:
+            yield k
 
     def __str__(self):
         """
@@ -552,6 +639,11 @@ class Session(object):
                 sd.delete()
         # delete from memcache
         memcache.delete('sid-'+str(self.session.key()))
+        self.cache = {}
+        self.cookie_vals = {}
+        self.output_cookie[self.cookie_name + '_data'] = \
+            simplejson.dumps(self.cookie_vals)
+        print self.output_cookie.output()
 
     def has_key(self, keyname):
         """

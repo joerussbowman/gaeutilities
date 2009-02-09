@@ -55,6 +55,7 @@ class AjaxSessionPage(webapp.RequestHandler):
 class SessionPage(webapp.RequestHandler):
   def get(self):
     self.sess = sessions.Session()
+    # self.cookie_sess = sessions.Session(writer="cookie")
     if self.request.get('deleteSession') == "true":
         self.sess.delete()
         print "Location: /session\n\n"
