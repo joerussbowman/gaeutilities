@@ -55,7 +55,7 @@ class AjaxSessionPage(webapp.RequestHandler):
 class SessionPage(webapp.RequestHandler):
   def get(self):
     self.sess = sessions.Session()
-    # self.cookie_sess = sessions.Session(writer="cookie")
+    self.cookie_sess = sessions.Session(writer="cookie")
     if self.request.get('deleteSession') == "true":
         self.sess.delete()
         print "Location: /session\n\n"
@@ -67,6 +67,7 @@ class SessionPage(webapp.RequestHandler):
         self.sess[keyname] = "test"
         self.sess[keyname + '2'] = "test2"
         self.sess[3] = "test3"
+        self.cookie_sess['cookie_test'] = "testing cookie values"
         if not 'viewCount' in self.sess:
             self.sess['viewCount'] = 1
         else:
@@ -75,6 +76,8 @@ class SessionPage(webapp.RequestHandler):
         self.memcacheStats = memcache.get_stats()
         template_values = {
             'sess': self.sess,
+            'sess_str': str(self.sess),
+            'cookie_sess': self.cookie_sess,
             'session_length': session_length,
             'memcacheStats': self.memcacheStats
         }

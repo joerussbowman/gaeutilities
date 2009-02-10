@@ -15,7 +15,8 @@
 When the Django template library is upgraded this demo can be modified to show the values as well. For now this is enough to demonstrate iteration support.
 </ul><br />
                 You can <a href="/session">View this page again</a>, you can <a href="/session?setflash=true">Set flash data</a>, pr you can <a href="/session?deleteSession=true">Delete your session</a> and start over.</p>
-<p>Memcache stats: {{ memcacheStats }}
+<p>Memcache stats: {{ memcacheStats }}</p>
+<p>Session str: {{ sess_str }}</p>
   <div id="container"></div>
   <div><input type="button" id="requestButton" value="Get 1" /><input type="button" id="requestButton10" value="Get 10" /><input type="button" id="requestButton20" value="Get 20" /></div>
 

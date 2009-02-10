@@ -101,7 +101,7 @@ class _DatastoreWriter(object):
         # with this keyname, delete it so we don't have conflicting
         # entries.
         if session.cookie_vals.has_key(keyname):
-            del(cookie_vals[keyname])
+            del(session.cookie_vals[keyname])
             session.output_cookie[session.cookie_name + '_data'] = \
                 simplejson.dumps(session.cookie_vals)
             print session.output_cookie.output()
@@ -112,13 +112,14 @@ class _DatastoreWriter(object):
             sessdata.session = session.session
             sessdata.keyname = keyname
         sessdata.content = pickle.dumps(value)
-        session.cache[keyname] = pickle.dumps(value)
+        # UNPICKLING CACHE session.cache[keyname] = pickle.dumps(value)
+        session.cache[keyname] = value
         sessdata.put()
         session._set_memcache()
 
 
 class _CookieWriter(object):
-    def _put(self, keyname, value, session):
+    def put(self, keyname, value, session):
         """
         Insert a keyname/value pair into the datastore for the session.
 
@@ -131,9 +132,6 @@ class _CookieWriter(object):
             raise ValueError('You must pass a value to put.')
 
         # Use simplejson for cookies instead of pickle.
-        # TODO: There should be a cookie that uses json for
-        #       formatting for all cookie sessiondata
-        #       values.
         session.cookie_vals[keyname] = value
         # update the requests session cache as well.
         session.cache[keyname] = value
@@ -210,10 +208,13 @@ class Session(object):
         self.cookie.load(string_cookie)
         try:
             self.cookie_vals = \
-                simplejson.loads(self.cookie[self.cookie_name + '_data'])
+                simplejson.loads(self.cookie[self.cookie_name + '_data'].value)
                 # sync self.cache and self.cookie_vals which will make those
                 # values available for all gets immediately.
-            self.cache = self.cookie_vals
+            for k in self.cookie_vals:
+                self.cache[k] = self.cookie_vals[k]
+            # sync the input cookie with the output cookie
+            self.output_cookie[self.cookie_name + '_data'] = self.cookie_[self.cookie_name + '_data']
         except:
             self.cookie_vals = {}
 
@@ -276,13 +277,16 @@ class Session(object):
             self.output_cookie[cookie_name] = self.sid
             self.output_cookie[cookie_name]['path'] = cookie_path
 
-            self.cache['sid'] = pickle.dumps(self.sid)
+            # UNPICKLING CACHE self.cache['sid'] = pickle.dumps(self.sid)
+            self.cache['sid'] = self.sid
 
             if do_put:
                 self.session.put()
 
-        if set_cookie_expires:
-            self.output_cookie[cookie_name]['expires'] = \
+        if self.set_cookie_expires:
+            if not self.output_cookie.has_key(cookie_name + '_data'):
+                self.output_cookie[cookie_name + '_data'] = ""
+            self.output_cookie[cookie_name + '_data']['expires'] = \
                 self.session_expire_time
         print self.output_cookie.output()
 
@@ -393,6 +397,7 @@ class Session(object):
         self.session.delete()
         # unset any cookie values that may exist
         self.cookie_vals = {}
+        self.cache = {}
         self.output_cookie[self.cookie_name + '_data'] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
@@ -475,7 +480,8 @@ class Session(object):
         if self.integrate_flash and (keyname == 'flash'):
             return self.flash.msg
         if keyname in self.cache:
-            return pickle.loads(str(self.cache[keyname]))
+            # UNPICKLING CACHE return pickle.loads(str(self.cache[keyname]))
+            return self.cache[keyname]
         if keyname in self.cookie_vals:
             return self.cookie_vals[keyname]
         mc = memcache.get('sid-'+str(self.session.key()))
@@ -484,7 +490,8 @@ class Session(object):
                 return mc[keyname]
         data = self._get(keyname)
         if data:
-            self.cache[keyname] = data.content
+            #UNPICKLING CACHE self.cache[keyname] = data.content
+            self.cache[keyname] = pickle.loads(data.content)
             self._set_memcache()
             return pickle.loads(data.content)
         else:
@@ -498,19 +505,14 @@ class Session(object):
             keyname: They keyname of the mapping.
             value: The value of mapping.
         """
- #       if type(keyname) is type(''):
-            # flash messages don't go in the datastore
 
         if self.integrate_flash and (keyname == 'flash'):
             self.flash.msg = value
         else:
             keyname = self._validate_key(keyname)
             self.cache[keyname] = value
-            self._set_memcache()
+            # self._set_memcache() # commented out because this is done in the datestore put
             return self._put(keyname, value)
-#        else:
-#            raise TypeError('Session data objects are only accessible by' + \
-#                ' string keys, not numerical indexes.')
 
     def __delitem__(self, keyname):
         """
@@ -528,6 +530,9 @@ class Session(object):
         if keyname in self.cookie_vals:
             del self.cookie_vals[keyname]
             bad_key = False
+            self.output_cookie[self.cookie_name + '_data'] = \
+                simplejson.dumps(self.cookie_vals)
+            print self.output_cookie.output()
         if bad_key:
             raise KeyError(str(keyname))
         if keyname in self.cache:
@@ -587,19 +592,20 @@ class Session(object):
 
     def _set_memcache(self):
         """
-        Set a memcache object with all the session date. Optionally you can
+        Set a memcache object with all the session data. Optionally you can
         add a key and value to the memcache for put operations.
         """
         # Pull directly from the datastore in order to ensure that the
         # information is as up to date as possible.
-        data = {}
-        sessiondata = self._get()
-        if sessiondata is not None:
-            for sd in sessiondata:
-                data[sd.keyname] = pickle.loads(sd.content)
+        if self.writer == "datastore":
+            data = {}
+            sessiondata = self._get()
+            if sessiondata is not None:
+                for sd in sessiondata:
+                    data[sd.keyname] = pickle.loads(sd.content)
 
-        memcache.set('sid-'+str(self.session.key()), data, \
-            self.session_expire_time)
+            memcache.set('sid-'+str(self.session.key()), data, \
+                self.session_expire_time)
 
     def cycle_key(self):
         """
@@ -654,23 +660,30 @@ class Session(object):
     def items(self):
         """
         A copy of list of (key, value) pairs
+
+        TODO: Needs testing
         """
-        return self._get()
+        op = {}
+        for k in self:
+            op[k] = self[k]
+        return op
 
     def keys(self):
         """
         List of keys.
+
+        TODO: Needs testing.
         """
         l = []
-        sessiondata = self._get()
-        if sessiondata is not None:
-            for sd in sessiondata:
-                l.append(sd)
+        for k in self:
+            l.append(k)
         return l
 
     def update(*dicts):
         """
         Updates with key/value pairs from b, overwriting existing keys, returns None
+
+        TODO: This needs to be updated to account for datastore and cookie storage.
         """
         for dict in dicts:
             for k in dict:
@@ -680,12 +693,12 @@ class Session(object):
     def values(self):
         """
         A copy list of values.
+
+        TODO: Needs testing.
         """
         v = []
-        sessiondata = self._get()
-        if sessiondata is not None:
-            for sd in sessiondata:
-                v.append(sessiondata[sd])
+        for k in self:
+            v.append(self[k])
         return v
 
     def get(self, keyname, default = None):
