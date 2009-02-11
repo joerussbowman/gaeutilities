@@ -84,6 +84,38 @@ class SessionPage(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'templates/session.html')
         self.response.out.write(template.render(path, template_values))
 
+class CookieSessionPage(webapp.RequestHandler):
+  def get(self):
+    #TODO: Check to see if a datastore session exists, and reset
+    # the session if so.
+    self.sess = sessions.Session(writer="cookie")
+    if self.request.get('deleteSession') == "true":
+        self.sess.delete()
+        print "Location: /session\n\n"
+    elif self.request.get('setflash') == "true":
+        self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
+        print "Location: /session\n\n"
+    else:
+        keyname = 'testKey'
+        self.sess[keyname] = "test"
+        self.sess[keyname + '2'] = "test2"
+        self.sess[3] = "test3"
+        if not 'viewCount' in self.sess:
+            self.sess['viewCount'] = 1
+        else:
+            self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+        session_length = len(self.sess)
+        self.memcacheStats = memcache.get_stats()
+        template_values = {
+            'sess': self.sess,
+            'sess_str': str(self.sess),
+            'session_length': session_length,
+            'memcacheStats': self.memcacheStats
+        }
+        path = os.path.join(os.path.dirname(__file__), 'templates/cookie_session.html')
+        self.response.out.write(template.render(path, template_values))
+
+
 class EventPage(webapp.RequestHandler):
   def __init__(self):
         self.msg = ""
@@ -139,6 +171,7 @@ def main():
   application = webapp.WSGIApplication(
                                        [('/', MainPage),
                                        ('/session', SessionPage),
+                                       ('/cookiesession', CookieSessionPage),
                                        ('/ajaxsession', AjaxSessionPage),
                                        ('/flash', FlashPage),
                                        ('/event', EventPage),

@@ -213,10 +213,11 @@ class Session(object):
                 # values available for all gets immediately.
             for k in self.cookie_vals:
                 self.cache[k] = self.cookie_vals[k]
+                self.output_cookie[self.cookie_name + '_data'] = self.cookie[self.cookie_name + '_data']
             # sync the input cookie with the output cookie
-            self.output_cookie[self.cookie_name + '_data'] = self.cookie_[self.cookie_name + '_data']
         except:
             self.cookie_vals = {}
+
 
         if writer == "cookie":
             pass
@@ -586,7 +587,7 @@ class Session(object):
         Return string representation.
         """
         if self._get():
-            return ', '.join(['("%s" = "%s")' % (k, self[k]) for k in self])
+            return '{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
         else:
             return []
 
@@ -660,8 +661,6 @@ class Session(object):
     def items(self):
         """
         A copy of list of (key, value) pairs
-
-        TODO: Needs testing
         """
         op = {}
         for k in self:
@@ -671,8 +670,6 @@ class Session(object):
     def keys(self):
         """
         List of keys.
-
-        TODO: Needs testing.
         """
         l = []
         for k in self:
@@ -682,8 +679,6 @@ class Session(object):
     def update(*dicts):
         """
         Updates with key/value pairs from b, overwriting existing keys, returns None
-
-        TODO: This needs to be updated to account for datastore and cookie storage.
         """
         for dict in dicts:
             for k in dict:
@@ -693,8 +688,6 @@ class Session(object):
     def values(self):
         """
         A copy list of values.
-
-        TODO: Needs testing.
         """
         v = []
         for k in self:
@@ -724,3 +717,12 @@ class Session(object):
                 return default
             return None
 
+    @classmethod
+    def validate_token(token=None):
+        """
+        This is a class method that checks the token to see if
+        there is a valid session for it. Useful for it you need
+        to determine if cookie or datastore sessions should be
+        used.
+        """
+        pass
