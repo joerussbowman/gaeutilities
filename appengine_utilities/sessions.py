@@ -48,19 +48,6 @@ from rotmodel import ROTModel
 # settings, if you have these set elsewhere, such as your django settings file,
 # you'll need to adjust the values to pull from there.
 
-COOKIE_NAME = 'appengine-utilities-session-sid' # session token
-DEFAULT_COOKIE_PATH = '/'
-SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
-CLEAN_CHECK_PERCENT = 50 # By default, 50% of all requests will clean the database
-INTEGRATE_FLASH = True # integrate functionality from flash module?
-CHECK_IP = True # validate sessions by IP
-CHECK_USER_AGENT = True # validate sessions by user agent
-SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
-SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
-UPDATE_LAST_ACTIVITY = 60 # Number of seconds that may pass before
-                          # last_activity is updated
-WRITER = "datastore" # Use the datastore writer by default. cookie is the
-                     # other option.
 
 class _AppEngineUtilities_Session(ROTModel):
     """
@@ -156,6 +143,21 @@ class Session(object):
     increases the performance of read requests to session
     data.
     """
+
+    COOKIE_NAME = 'appengine-utilities-session-sid' # session token
+    DEFAULT_COOKIE_PATH = '/'
+    SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
+    CLEAN_CHECK_PERCENT = 50 # By default, 50% of all requests will clean the database
+    INTEGRATE_FLASH = True # integrate functionality from flash module?
+    CHECK_IP = True # validate sessions by IP
+    CHECK_USER_AGENT = True # validate sessions by user agent
+    SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
+    SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
+    UPDATE_LAST_ACTIVITY = 60 # Number of seconds that may pass before
+                            # last_activity is updated
+    WRITER = "datastore" # Use the datastore writer by default. cookie is the
+                        # other option.
+
 
     def __init__(self, cookie_path=DEFAULT_COOKIE_PATH,
             cookie_name=COOKIE_NAME,
@@ -387,15 +389,16 @@ class Session(object):
         """
         Delete the session and all session data.
         """
-        sessiondata = self._get()
-        # delete from datastore
-        if sessiondata is not None:
-            for sd in sessiondata:
-                sd.delete()
-        # delete from memcache
-        memcache.delete('sid-'+str(self.session.key()))
-        # delete the session now that all items that reference it are deleted.
-        self.session.delete()
+        if hasattr(self, "session"):
+            sessiondata = self._get()
+            # delete from datastore
+            if sessiondata is not None:
+                for sd in sessiondata:
+                    sd.delete()
+            # delete from memcache
+            memcache.delete('sid-'+str(self.session.key()))
+            # delete the session now that all items that reference it are deleted.
+            self.session.delete()
         # unset any cookie values that may exist
         self.cookie_vals = {}
         self.cache = {}
@@ -435,7 +438,7 @@ class Session(object):
                 all_sessions_deleted = True
             else:
                 for result in results:
-#                    memcache.delete('sid-'+str(result.key())
+                    memcache.delete('sid-' + str(result.key()))
                     result.delete()
 
         while not all_data_deleted:
@@ -485,18 +488,20 @@ class Session(object):
             return self.cache[keyname]
         if keyname in self.cookie_vals:
             return self.cookie_vals[keyname]
-        mc = memcache.get('sid-'+str(self.session.key()))
-        if mc is not None:
-            if keyname in mc:
-                return mc[keyname]
-        data = self._get(keyname)
-        if data:
-            #UNPICKLING CACHE self.cache[keyname] = data.content
-            self.cache[keyname] = pickle.loads(data.content)
-            self._set_memcache()
-            return pickle.loads(data.content)
-        else:
-            raise KeyError(str(keyname))
+        if hasattr(self, "session"):
+            mc = memcache.get('sid-'+str(self.session.key()))
+            if mc is not None:
+                if keyname in mc:
+                    return mc[keyname]
+            data = self._get(keyname)
+            if data:
+                #UNPICKLING CACHE self.cache[keyname] = data.content
+                self.cache[keyname] = pickle.loads(data.content)
+                self._set_memcache()
+                return pickle.loads(data.content)
+            else:
+                raise KeyError(str(keyname))
+        raise KeyError(str(keyname))
 
     def __setitem__(self, keyname, value):
         """
@@ -545,14 +550,16 @@ class Session(object):
         Return size of session.
         """
         # check memcache first
-        mc = memcache.get('sid-'+str(self.session.key()))
-        if mc is not None:
-            return len(mc) + len(self.cookie_vals)
-        results = self._get()
-        if results is not None:
-            return len(results) + len(self.cookie_vals)
-        else:
-            return 0
+        if hasattr(self, "session"):
+            mc = memcache.get('sid-'+str(self.session.key()))
+            if mc is not None:
+                return len(mc) + len(self.cookie_vals)
+            results = self._get()
+            if results is not None:
+                return len(results) + len(self.cookie_vals)
+            else:
+                return 0
+        return len(self.cookie_vals)
 
     def __contains__(self, keyname):
         """
@@ -572,13 +579,14 @@ class Session(object):
         Iterate over the keys in the session data.
         """
         # try memcache first
-        mc = memcache.get('sid-'+str(self.session.key()))
-        if mc is not None:
-            for k in mc:
-                yield k
-        else:
-            for k in self._get():
-                yield k.keyname
+        if hasattr(self, "session"):
+            mc = memcache.get('sid-'+str(self.session.key()))
+            if mc is not None:
+                for k in mc:
+                    yield k
+            else:
+                for k in self._get():
+                    yield k.keyname
         for k in self.cookie_vals:
             yield k
 
@@ -586,10 +594,11 @@ class Session(object):
         """
         Return string representation.
         """
-        if self._get():
-            return '{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
-        else:
-            return []
+
+        #if self._get():
+        return '{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
+        #else:
+        #    return []
 
     def _set_memcache(self):
         """
@@ -718,11 +727,37 @@ class Session(object):
             return None
 
     @classmethod
-    def validate_token(token=None):
+    def check_token(cls, cookie_name=COOKIE_NAME, delete_invalid=True):
         """
-        This is a class method that checks the token to see if
-        there is a valid session for it. Useful for it you need
-        to determine if cookie or datastore sessions should be
-        used.
+        Retrieves the token from a cookie and validates that it is
+        a valid token for an existing cookie. Cookie validation is based
+        on the token existing on a session that has not expired.
+
+        This is useful for determining if datastore or cookie writer
+        should be used in hybrid implementations.
+
+        Args:
+            cookie_name: Name of the cookie to check for a token.
+            delete_invalid: If the token is not valid, delete the session
+                            cookie, to avoid datastore queries on future
+                            requests.
+
+        Returns True/False
         """
-        pass
+
+        string_cookie = os.environ.get('HTTP_COOKIE', '')
+        cookie = Cookie.SimpleCookie()
+        cookie.load(string_cookie)
+        if cookie.has_key(cookie_name):
+            query = _AppEngineUtilities_Session.all()
+            query.filter('sid', cookie[cookie_name].value)
+            results = query.fetch(1)
+            if len(results) > 0:
+                return True
+            else:
+                if delete_invalid:
+                    output_cookie = Cookie.SimpleCookie()
+                    output_cookie[cookie_name] = cookie[cookie_name]
+                    output_cookie[cookie_name]['expires'] = 0
+                    print output_cookie.output()
+        return False

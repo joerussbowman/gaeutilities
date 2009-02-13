@@ -10,7 +10,7 @@ Neither the name of the appengine-utilities project nor the names of its contrib
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
-import os, cgi, __main__
+import os, cgi, __main__, Cookie
 from google.appengine.ext.webapp import template
 from appengine_utilities import sessions
 from appengine_utilities import flash
@@ -86,15 +86,13 @@ class SessionPage(webapp.RequestHandler):
 
 class CookieSessionPage(webapp.RequestHandler):
   def get(self):
-    #TODO: Check to see if a datastore session exists, and reset
-    # the session if so.
     self.sess = sessions.Session(writer="cookie")
     if self.request.get('deleteSession') == "true":
         self.sess.delete()
-        print "Location: /session\n\n"
+        print "Location: /cookiesession\n\n"
     elif self.request.get('setflash') == "true":
-        self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
-        print "Location: /session\n\n"
+        self.sess['flash'] = 'You set a flash message! <a href="/cookiesession">Refresh this page</a> and this message is gone!'
+        print "Location: /cookiesession\n\n"
     else:
         keyname = 'testKey'
         self.sess[keyname] = "test"

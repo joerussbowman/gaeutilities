@@ -30,7 +30,7 @@
 </td></tr></table>
 When the Django template library is upgraded this demo can be modified to show the values as well. For now this is enough to demonstrate iteration support.
 </ul><br />
-                You can <a href="/session">View this page again</a>, you can <a href="/session?setflash=true">Set flash data</a>, pr you can <a href="/session?deleteSession=true">Delete your session</a> and start over.</p>
+                You can <a href="/cookiesession">View this page again</a>, you can <a href="/cookiesession?setflash=true">Set flash data</a>, pr you can <a href="/cookiesession?deleteSession=true">Delete your session</a> and start over.</p>
 <p>Memcache stats: {{ memcacheStats }}</p>
 <p>Session str: {{ sess_str }}</p>
   <div id="container"></div>
@@ -44,10 +44,10 @@ class SessionPage(webapp.RequestHandler):
     self.sess = sessions.Session()
     if self.request.get('deleteSession') == "true":
         self.sess.delete()
-        print "Location: /session\n\n"
+        print "Location: /cookiesession\n\n"
     elif self.request.get('setflash') == "true":
-        self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
-        print "Location: /session\n\n"
+        self.sess['flash'] = 'You set a flash message! <a href="/cookiesession">Refresh this page</a> and this message is gone!'
+        print "Location: /cookiesession\n\n"
     else:
         self.sess['testKey'] = "test"
         self.sess['testKey2'] = "test2"
@@ -60,7 +60,7 @@ class SessionPage(webapp.RequestHandler):
             'sess': self.sess,
             'memcacheStats': self.memcacheStats
         }
-        path = os.path.join(os.path.dirname(__file__), 'templates/session.html')
+        path = os.path.join(os.path.dirname(__file__), 'templates/cookiesession.html')
         self.response.out.write(template.render(path, template_values))
 {% endfilter %}</pre>
 </div>
@@ -92,7 +92,7 @@ class SessionPage(webapp.RequestHandler):
 </td></tr></table>
 When the Django template library is upgraded this demo can be modified to show the values as well. For now this is enough to demonstrate iteration support.
 </ul><br />
-                You can <a href="/session">View this page again</a>, you can <a href="/session?setflash=true">Set flash data</a>, pr you can <a href="/session?deleteSession=true">Delete your session</a> and start over.</p>
+                You can <a href="/cookiesession">View this page again</a>, you can <a href="/cookiesession?setflash=true">Set flash data</a>, pr you can <a href="/cookiesession?deleteSession=true">Delete your session</a> and start over.</p>
 <p>Memcache stats: {% templatetag openvariable %} memcacheStats {% templatetag closevariable %}</p>
 <p>Session str: {% templatetag openvariable %} sess_str {% templatetag closevariable %}</p>
   <div id="container"></div>

@@ -9,7 +9,24 @@ class SessionMiddleware(object):
     TEST_COOKIE_VALUE = 'worked'
 
     def process_request(self, request):
-        request.session = sessions.Session()
+        """
+        Check to see if a valid session token exists, if not,
+        then use a cookie only session. It's up to the application
+        to convert the session to a datastore session. Once this
+        has been done, the session will continue to use the datastore
+        unless the writer is set to "cookie".
+
+        Setting the session to use the datastore is as easy as resetting
+        request.session anywhere if your application.
+
+        Example:
+            from common.appengine_utilities import sessions
+            request.session = sessions.Session()
+        """
+        if sessions.Session.check_token():
+            request.session = sessions.Session()
+        else:
+            request.session = sessions.Session(writer="cookie")
         request.session.set_test_cookie = self.set_test_cookie
         request.session.test_cookie_worked = self.test_cookie_worked
         request.session.delete_test_cookie = self.delete_test_cookie
