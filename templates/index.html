@@ -30,4 +30,41 @@ pant.lalit<br />
  - session: delete_all_sessions changed to a class method. Issue #14 (NOTE: delete_all_sessions is not complete)<br />
  - session: Modified session token to include the session key. Issue #10<br />
  - session: Session token encryption changed to md5 from sha1, in order to improve performance as the salt is randomized with a time string.<br />
-{% endblock %}
+ </p>
+ <p><strong>[2/20/2009]</strong>1.2 Release<br />
+  - Bugfix: session deleting was failing and making it so that an error
+  would be presented on every pageview until cookies were cleared. This is
+  fixed.
+  - sessions.py - Cookie sessions are now in.<br/>
+  You can now initialize session as Session(writer="cookie") and all
+  session values will be stored in a new cookie within the browser,
+  bypassing the datastore altogether. If you are creating an application that
+  does not need to protect the session data, this will have huge CPU
+  benefits. Another user is to initialize cookie writer sessions for your
+  application's non-logged in users. When the user logs in you can reset the
+  session to the normal datastore backed one. <br />
+  A new class method check_token() has been created to determine which type of
+  session is available to the user. Session.check_token() will check to see if a
+  session token cookie exists in the users browser, then will determine if it's
+  valid or not. Thus check_token allows you to do something like:<br />
+  <pre>
+  if Session.check_token():
+      session = Session()
+  else:
+      session = Session(writer="cookie")
+  </pre>
+  The django middleware has been updated to use this. However, this does mean
+  you have an extra level of management necessary for your login
+  functionality for django now. This has only been tested on appenginepatch with
+  the latest django.
+  For example to log in a user you'd want to do something like this:
+  <pre>
+        user = auth.authenticate(account = id)
+        if user is not None and user.is_active:
+            request.session.save()
+            auth.login(request, user)
+  </pre>
+
+ </p>
+
+ {% endblock %}

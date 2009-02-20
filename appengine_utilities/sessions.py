@@ -246,6 +246,8 @@ class Session(object):
 
             if new_session:
                 # start a new session
+                self.session = _AppEngineUtilities_Session()
+                self.session.put()
                 self.sid = self.new_sid()
                 self.session = _AppEngineUtilities_Session()
                 if 'HTTP_USER_AGENT' in os.environ:

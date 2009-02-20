@@ -23,6 +23,7 @@ class SessionMiddleware(object):
             from common.appengine_utilities import sessions
             request.session = sessions.Session()
         """
+        self.request = request
         if sessions.Session.check_token():
             request.session = sessions.Session()
         else:
@@ -30,6 +31,7 @@ class SessionMiddleware(object):
         request.session.set_test_cookie = self.set_test_cookie
         request.session.test_cookie_worked = self.test_cookie_worked
         request.session.delete_test_cookie = self.delete_test_cookie
+        request.session.save = self.save
 
     def set_test_cookie(self):
         string_cookie = os.environ.get('HTTP_COOKIE', '')
@@ -55,3 +57,6 @@ class SessionMiddleware(object):
         self.cookie[self.TEST_COOKIE_NAME] = ''
         self.cookie[self.TEST_COOKIE_NAME]['path'] = '/'
         self.cookie[self.TEST_COOKIE_NAME]['expires'] = 0
+
+    def save(self):
+        self.request.session = sessions.Session()
