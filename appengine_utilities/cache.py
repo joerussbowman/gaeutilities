@@ -179,11 +179,12 @@ class Cache(object):
         results = query.fetch(1)
         if len(results) is 0:
             return None
+        return results[0]
+
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheReadFromDatastore')
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheRead')
-        return results[0]
 
     def delete(self, key = None):
         """
@@ -256,3 +257,9 @@ class Cache(object):
         except KeyError:
             return False
         return True
+
+    def has_key(self, keyname):
+        """
+        Equivalent to k in a, use that form in new code
+        """
+        return self.__contains__(keyname)

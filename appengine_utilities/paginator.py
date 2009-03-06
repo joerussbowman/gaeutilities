@@ -34,7 +34,7 @@ class Paginator(object):
     """
 
     @classmethod
-    def get(cls, count=10, q_filter_attr=None, q_filter="", start=None, model=None, \
+    def get(cls, count=10, q_filter_attr="", q_filter="", start=None, model=None, \
             order='DESC', order_by='__key__'):
         """
         get queries the database on model, starting with key, ordered by
@@ -65,13 +65,37 @@ class Paginator(object):
         if model == None:
             raise ValueError('You must pass a model to query')
 
-        if not model.gql:
+        # a valid model object will have a gql method.
+        if callable(model.gql) == False:
             raise TypeError('model must be a valid model object.')
 
         # cache check
-        c = cache.Cache()
-        if c['gae_paginator_' + q_filter + "_index"]:
-            return c['gae_paginator_' + q_filter + "_index"]
+        c = Cache()
+        if c.has_key("gae_paginator_" + q_filter_attr + "_" + q_filter + "_index"):
+            return c["gae_paginator_" + q_filter_attr + "_" + q_filter + "_index"]
 
-        # query
-        
+        # build query
+        query = ""
+        if start:
+            query_str = "WHERE " + order_by
+            if order == "DESC":
+                query = query + " < :start"
+            else:
+                query = query + " > :start"
+
+            if q_filter_attr != "" and q_filter != "":
+                query = query + " AND " + q_filter_attr + "= :filter"
+        else:
+            if q_filter_attr != "" and q_filter != "":
+                query = query + "WHERE " + q_filter_attr + " = :filter"
+
+        query = query + " ORDER BY " + order_by + " " +  order
+        results = model.gql(query).fetch(count + 1)
+        if len(results) == count + 1:
+            next = results[count - 1]['__dict__'][order_by]
+        else:
+            next = None
+        return {
+                    "results": results,
+                    "next": next
+               }
