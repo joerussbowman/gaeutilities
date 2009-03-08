@@ -235,21 +235,15 @@ class Session(object):
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
                 self.session = self._get_session() # will return None if
-                                                # sid expired
+                                                   # sid expired
                 if self.session:
                     new_session = False
-            else:
-                # create and put a new session to get the key initialized
-                self.session = _AppEngineUtilities_Session()
-                self.session.put()
-                self.sid = self.new_sid()
 
             if new_session:
                 # start a new session
                 self.session = _AppEngineUtilities_Session()
                 self.session.put()
                 self.sid = self.new_sid()
-                self.session = _AppEngineUtilities_Session()
                 if 'HTTP_USER_AGENT' in os.environ:
                     self.session.ua = os.environ['HTTP_USER_AGENT']
                 else:
@@ -286,7 +280,8 @@ class Session(object):
             self.cache['sid'] = self.sid
 
             if do_put:
-                self.session.put()
+                if self.sid != None or self.sid != "":
+                    self.session.put()
 
         if self.set_cookie_expires:
             if not self.output_cookie.has_key(cookie_name + '_data'):
@@ -310,7 +305,6 @@ class Session(object):
         Create a new session id.
         """
         sid = str(self.session.key()) + md5.new(repr(time.time()) + \
-		os.environ['REMOTE_ADDR'] + \
                 str(random.random())).hexdigest()
         return sid
 
