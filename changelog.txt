@@ -145,5 +145,5 @@ For example to log in a user you'd want to do something like this:
             auth.login(request, user)
   
 1.2.1
- - paginator - initial release
  - cache - has_key method added
+ - sessions - Bug fix for empty sessions with null values sids being created along with new sessions
