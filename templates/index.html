@@ -14,24 +14,11 @@
 {% endblock %}
 {% block content %}
         <h2>Recent Updates</h2>
-        <p><strong>[10/26/2008]</strong>Project renamed to gaeutilities. 1.0 release.</p>
-        <p><strong>[1/19/2009]</strong>1.1.1 Release, including new ROTModel</p>
-        <p><strong>[1/26/2009]</strong>1.1.2 Release<br />
-   	 - session: Added last_activity_update variable to set an interval for which last_activity needs to be updated. It defaults to 60 seconds. This means a put is not 
-required every request which should increase performance.<br />
- - session: Refactored based on a contribution from Jeremy Awon optimizing the class initialization.<br />
- - session: Bug found in the process to clear old sessions that was deleting data it shouldn't be. This was the cause of the mysterious missing session data bug. Thank you 
-pant.lalit<br />
- - session: Bug fixed where clean_check_percent was being ignored.<br />
- - session: Some tweaks done to delete_all_session(), though this feature shouldn't be considered complete yet. Needs more testing.<br />
-</p>
-<p><strong>[2/8/2009]</strong>1.1.3 Release<br />
- - session: bugfix to handle str() and len() methods when there is no session data. Issue #12<br />
- - session: delete_all_sessions changed to a class method. Issue #14 (NOTE: delete_all_sessions is not complete)<br />
- - session: Modified session token to include the session key. Issue #10<br />
- - session: Session token encryption changed to md5 from sha1, in order to improve performance as the salt is randomized with a time string.<br />
- </p>
- <p><strong>[2/20/2009]</strong>1.2 Release<br />
+<p><strong>[3/08/2009]</strong>1.2 Release<br />
+ - cache - has_key method added<br />
+ - sessions - Bug fix for empty sessions with null values sids being created along with new sessions
+ </p>        
+<p><strong>[2/20/2009]</strong>1.2 Release<br />
   - Bugfix: session deleting was failing and making it so that an error
   would be presented on every pageview until cookies were cleared. This is
   fixed.
@@ -66,5 +53,12 @@ pant.lalit<br />
   </pre>
 
  </p>
+<p><strong>[2/8/2009]</strong>1.1.3 Release<br />
+ - session: bugfix to handle str() and len() methods when there is no session data. Issue #12<br />
+ - session: delete_all_sessions changed to a class method. Issue #14 (NOTE: delete_all_sessions is not complete)<br />
+ - session: Modified session token to include the session key. Issue #10<br />
+ - session: Session token encryption changed to md5 from sha1, in order to improve performance as the salt is randomized with a time string.<br />
+ </p>
+ 
 
  {% endblock %}
