@@ -34,8 +34,8 @@ class Paginator(object):
     """
 
     @classmethod
-    def get(cls, count=10, q_filter_attr="", q_filter="", start=None, model=None, \
-            order='DESC', order_by='__key__'):
+    def get(cls, count=10, q_filters={}, search=None, start=None, model=None, \
+            order='ASC', order_by='__key__'):
         """
         get queries the database on model, starting with key, ordered by
         order. It receives count + 1 items, returning count and setting a
@@ -44,8 +44,8 @@ class Paginator(object):
 
         Arguments:
             count:         The amount of entries to pull on query
-            q_filter_attr: The attribute to filter on (optional)
             q_filter:      The filter value (optional)
+            search:        Search is used for SearchableModel searches
             start:         The key to start the page from
             model:         The Model object to query against. This is not a
                            string, it must be a Model derived object.
@@ -70,32 +70,52 @@ class Paginator(object):
             raise TypeError('model must be a valid model object.')
 
         # cache check
+        cache_string = "gae_paginator_"
+        for q_filter in q_filters:
+            cache_string = cache_string + q_filter + "_" + q_filters[q_filter] + "_"
+        cache_string = cache_string + "index"
         c = Cache()
-        if c.has_key("gae_paginator_" + q_filter_attr + "_" + q_filter + "_index"):
-            return c["gae_paginator_" + q_filter_attr + "_" + q_filter + "_index"]
+        if c.has_key(cache_string):
+            return c[cache_string]
 
         # build query
-        query = ""
+        query = model.all()
+        if len(q_filters) > 0:
+            for q_filter in q_filters:
+                query.filter(q_filter + " = ", q_filters[q_filter])
         if start:
-            query_str = "WHERE " + order_by
-            if order == "DESC":
-                query = query + " < :start"
+            if order.lower() == "DESC".lower():
+                query.filter(order_by + " <", start)
             else:
-                query = query + " > :start"
-
-            if q_filter_attr != "" and q_filter != "":
-                query = query + " AND " + q_filter_attr + "= :filter"
+                query.filter(order_by + " >", start)
+        if search:
+            query.search(search)
+        if order.lower() == "DESC".lower():
+            query.order("-" + order_by)
         else:
-            if q_filter_attr != "" and q_filter != "":
-                query = query + "WHERE " + q_filter_attr + " = :filter"
-
-        query = query + " ORDER BY " + order_by + " " +  order
-        results = model.gql(query).fetch(count + 1)
+            query.order(order_by)
+        results = query.fetch(count + 1)
         if len(results) == count + 1:
-            next = results[count - 1]['__dict__'][order_by]
+            next = getattr(results[count - 1], order_by)
+            # reverse the query to get the value for previous
+            if start is not None:
+                rquery = model.all()
+                for q_filter in q_filters:
+                    rquery.filter(q_filter + " = ", q_filters[q_filter])
+                if search:
+                    query.search(search)
+                if order.lower() == "DESC".lower():
+                    rquery.order(order_by)
+                else:
+                    rquery.order("-" + order_by)
+                rresults = rquery.fetch(count)
+                previous = getattr(results[0], order_by)
+            else:
+                previous = None
         else:
             next = None
         return {
                     "results": results,
-                    "next": next
+                    "next": next,
+                    "previous": previous
                }
