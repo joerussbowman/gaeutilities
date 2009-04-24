@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2008, appengine-utilities project
 All rights reserved.
@@ -133,7 +134,15 @@ class Cache(object):
         cacheEntry.value = pickle.dumps(value)
         cacheEntry.timeout = timeout
 
-        cacheEntry.put()
+        # try to put the entry, if it fails silently pass
+        # failures may happen due to timeouts, the datastore being read
+        # only for maintenance or other applications. However, cache
+        # not being able to write to the datastore should not
+        # break the application
+        try:
+            cacheEntry.put()
+        except:
+            pass
 
         memcache_timeout = timeout - datetime.datetime.now()
         memcache.set('cache-'+key, value, int(memcache_timeout.seconds))
@@ -157,7 +166,10 @@ class Cache(object):
         cacheEntry.value = pickle.dumps(value)
         cacheEntry.timeout = timeout
 
-        cacheEntry.put()
+        try:
+            cacheEntry.put()
+        except:
+            pass
 
         memcache_timeout = timeout - datetime.datetime.now()
         memcache.set('cache-'+key, value, int(memcache_timeout.seconds))
