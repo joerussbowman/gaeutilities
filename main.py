@@ -62,6 +62,12 @@ class SessionPage(webapp.RequestHandler):
     elif self.request.get('setflash') == "true":
         self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
         print "Location: /session\n\n"
+    elif self.request.get('setTestKey') == "true":
+        self.sess['DeletableKey'] = 'delete me'
+        print "Location: /session\n\n"
+    elif self.request.get('clearTestKey') == "true":
+        self.sess.delete_item('DeletableKey')
+        print "Location: /session\n\n"
     else:
         keyname = 'testKey'
         self.sess[keyname] = "test"

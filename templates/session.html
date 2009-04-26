@@ -30,7 +30,17 @@
 </td></tr></table>
 When the Django template library is upgraded this demo can be modified to show the values as well. For now this is enough to demonstrate iteration support.
 </ul><br />
-                You can <a href="/session">View this page again</a>, you can <a href="/session?setflash=true">Set flash data</a>, pr you can <a href="/session?deleteSession=true">Delete your session</a> and start over.</p>
+                <table><tr><td>
+                            <a href="/session">view this page again</a>
+                            </td></tr><tr><td>
+                            <a href="/session?setflash=true">set flash data</a>
+                            </td></tr><tr><td>
+                            <a href="/session?deleteSession=true">delete your session and start over</a>
+                            </td></tr><tr><td>
+                            <a href="/session?clearTestKey=true">clear the test key</a>
+                            </td></tr><tr><td>
+                            <a href="/session?setTestKey=true">set the test key</a>
+                </td></tr></table>
 <p>Memcache stats: {{ memcacheStats }}</p>
 <p>Session str: {{ sess_str }}</p>
   <div id="container"></div>
@@ -47,6 +57,9 @@ class SessionPage(webapp.RequestHandler):
         print "Location: /session\n\n"
     elif self.request.get('setflash') == "true":
         self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
+        print "Location: /session\n\n"
+    elif self.request.get('clearTestKey') == "true":
+        self.sess.delete_item('testKey')
         print "Location: /session\n\n"
     else:
         self.sess['testKey'] = "test"

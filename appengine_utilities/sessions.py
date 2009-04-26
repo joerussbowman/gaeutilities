@@ -516,6 +516,26 @@ class Session(object):
             # self._set_memcache() # commented out because this is done in the datestore put
             return self._put(keyname, value)
 
+    def delete_item(self, keyname, throw_exception=False):
+        """
+        Delete item from session data, ignoring exceptions if
+        necessary.
+
+        Args:
+            keyname: The keyname of the object to delete.
+            throw_exception: false if exceptions are to be ignored.
+        Returns:
+            Nothing.
+        """
+        if throw_exception:
+            self.__delitem(keyname)
+            return None
+        else:
+            try:
+                self.__delitem__(keyname)
+            except KeyError:
+                return None
+
     def __delitem__(self, keyname):
         """
         Delete item from session data.
