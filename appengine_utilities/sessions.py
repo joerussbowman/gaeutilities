@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2008, appengine-utilities project
 All rights reserved.
@@ -528,7 +529,7 @@ class Session(object):
             Nothing.
         """
         if throw_exception:
-            self.__delitem(keyname)
+            self.__delitem__(keyname)
             return None
         else:
             try:
