@@ -14,6 +14,11 @@
 {% endblock %}
 {% block content %}
         <h2>Recent Updates</h2>
+<p><strong>[4/28/2009]</strong>1.2.2<br />
+ - cache - now will not error if a write to the datastore fails, continues with just memcache
+ - delete_item() added to session. Can be used to delete items, whether they exist or not
+    and not throw KeyError. Optionally you can call with throw_exception set to True, and it will
+    throw KeyError exceptions, as if you've done a "del session[key]"
 <p><strong>[3/08/2009]</strong>1.2 Release<br />
  - cache - has_key method added<br />
  - sessions - Bug fix for empty sessions with null values sids being created along with new sessions
