@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2008, appengine-utilities project
 All rights reserved.
@@ -56,6 +57,7 @@ class _AppEngineUtilities_Session(ROTModel):
     """
 
     sid = db.StringListProperty()
+    session_key = db.FloatPropety()
     ip = db.StringProperty()
     ua = db.StringProperty()
     last_activity = db.DateTimeProperty(auto_now=True)
@@ -66,7 +68,8 @@ class _AppEngineUtilities_SessionData(ROTModel):
     Model for the session data in the datastore.
     """
 
-    session = db.ReferenceProperty(_AppEngineUtilities_Session)
+    # session = db.ReferenceProperty(_AppEngineUtilities_Session)
+    session_key = db.FloatPropety()
     keyname = db.StringProperty()
     content = db.BlobProperty()
 
@@ -95,6 +98,7 @@ class _DatastoreWriter(object):
 
         sessdata = session._get(keyname=keyname)
         if sessdata is None:
+            # SESSION_KEY CHANGES (delete when done)
             sessdata = _AppEngineUtilities_SessionData()
             sessdata.session = session.session
             sessdata.keyname = keyname
@@ -232,6 +236,7 @@ class Session(object):
             do_put = False
 
             # check for existing cookie
+            # sid format - sessionkey_sidvalue
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
                 self.session = self._get_session() # will return None if
@@ -312,6 +317,81 @@ class Session(object):
         """
         Get the user's session from the datastore
         """
+
+        key = self.sid.split('_')[0]
+        mc_session = memcache.get('gaeutilities_session_' + key)
+        if mc_session != None:
+            # key exists
+            if self.sid in mc_session['sid']:
+                # sid is valid do other checks if configured
+                if self.check_user_agent:
+                    if mc_session['ua'] != os.environ['HTTP_USER_AGENT']:
+                        return None
+                if self.check_user_ip:
+                    if mc_session['ip'] != os.environ['REMOTE_ADDR']:
+                        return None
+                sessionAge = datetime.datetime.now() - mc_session['last_activity']
+                if sessionAge.seconds > self.session_expire_time:
+                    memcache.delete('gaeutilities_session_' + key)
+                    return None
+                # check for dirty bit to see if we need to push
+                # attempt to push memcache data down
+                if mc_session.has_key('dirty') and mc_session['dirty']:
+                    query = _AppEngineUtilities_Session.all()
+                    query.filter("session_key = ", key)
+                    results = query.fetch(1)
+                    if len(results) > 0:
+                        # session does exist in ds, sync it up
+                        ds_session = results[0]
+                        ds_session.sid = ms_session['sid']
+                        try:
+                            ds_session.put()
+                            for key in mc_session['data']:
+                                self._put(key, mc_session['data'][key]
+                        mc_session['dirty'] = False
+                        except:
+                            # at least one put failed, leave dirty bit
+                            pass
+                return session
+            else:
+                return None
+        else:
+            # no memcache session, check datastore
+            query = _AppEngineUtilities_Session.all()
+            query.filter('sid', self.sid)
+            if self.check_user_agent:
+                query.filter('ua', os.environ['HTTP_USER_AGENT'])
+            if self.check_ip:
+                query.filter('ip', os.environ['REMOTE_ADDR'])
+            results = query.fetch(1)
+            if len(results) is 0:
+                return None
+            else:
+                ds_session = results[0]
+                sessionAge = datetime.datetime.now() - ds_session.last_activity
+                if sessionAge.seconds > self.session_expire_time:
+                    ds_session.delete()
+                    return None
+                # There is a good session, create a memcache entry for it
+                mc_session = {
+                    "session_key": ds_session.session_key,
+                    "ua": ds_session.ua,
+                    "ip": ds_session.ip,
+                    "last_activity": ds.last_activity,
+                    "data": {}
+                }
+                data_query = _AppEngineUtilities_Session.all()
+                data_query.filter("session_key = ", ds_session.session_key)
+                #todo write a loop that can fetch more than 1000
+                results = query.fetch(1000)
+                if len(results) > 0:
+                    for result in results:
+                        mc_session["data"][result.keyname] = result.content
+                memcache.add('gaeutilities_session_' + ds_session.session_key, mc_session)
+                return ds_session
+
+
+        """ old
         query = _AppEngineUtilities_Session.all()
         query.filter('sid', self.sid)
         if self.check_user_agent:
@@ -327,6 +407,10 @@ class Session(object):
                 results[0].delete()
                 return None
             return results[0]
+        """
+
+        # sid should have the session key prepended at the beginning, so start there
+        
 
     def _get(self, keyname=None):
         """

@@ -49,7 +49,6 @@ class _AppEngineUtilities_Cache(db.Model):
     timeout = db.DateTimeProperty()
     value = db.BlobProperty()
 
-
 class Cache(object):
     """
     Cache is used for storing pregenerated output and/or objects in the Big
