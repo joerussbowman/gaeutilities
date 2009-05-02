@@ -36,6 +36,7 @@ import Cookie
 import pickle
 import __main__
 from time import strftime
+import logging
 
 # google appengine imports
 from google.appengine.ext import db
@@ -50,26 +51,232 @@ from rotmodel import ROTModel
 # you'll need to adjust the values to pull from there.
 
 
-class _AppEngineUtilities_Session(ROTModel):
+class _AppEngineUtilities_Session(db.Model):
     """
     Model for the sessions in the datastore. This contains the identifier and
     validation information for the session.
     """
 
     sid = db.StringListProperty()
+    session_key = db.FloatProperty()
     ip = db.StringProperty()
     ua = db.StringProperty()
-    last_activity = db.DateTimeProperty(auto_now=True)
+    last_activity = db.DateTimeProperty()
+    dirty = db.BooleanProperty(default=False)
+    working = db.BooleanProperty(default=False)
+    deleted = db.BooleanProperty(default=False) # used for cases where
+                                                # datastore delete doesn't
+                                                # work
 
+    def put(self):
+        """
+        Extend put so that it writes vaules to memcache as well as the datastore,
+        and keeps them in sync, even when datastore writes fails.
+        """
+        if self.session_key:
+            memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), self)
+        else:
+            # new session, generate a new key, which will handle the put and set the memcache
+            self.create_key()
 
-class _AppEngineUtilities_SessionData(ROTModel):
+        self.last_activity = datetime.datetime.now()
+
+        try:
+            self.dirty = False
+            logging.info("doing a put")
+            db.put(self)
+            memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), self)
+        except:
+            self.dirty = True
+            memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), self)
+
+        return self
+
+    @classmethod
+    def get_session(cls, sid=None):
+        """
+        Uses the passed sid to get a session object from memcache, or datastore
+        if a valid one exists.
+        """
+        if sid == None:
+            return None
+        session_key = sid.split('_')[0]
+        session = memcache.get("_AppEngineUtilities_Session_" + str(session_key))
+        if session:
+            if session.deleted == True:
+                session.delete()
+                return None
+            if session.dirty == True and session.working != False:
+                # the working bit is used to make sure multiple requests, which can happen
+                # with ajax oriented sites, don't try to put at the same time
+                session.working = True
+                memcache.set("_AppEngineUtilities_Session_" + str(session_key), session)
+                session.put()
+            if sid in session.sid:
+                logging.info('grabbed session from memcache')
+                return session
+            else:
+                return None
+ 
+        # Not in memcache, check datastore
+        query = _AppEngineUtilities_Session.all()
+        query.filter("sid = ", sid)
+        results = query.fetch(1)
+        if len(results) > 0:
+            memcache.set("_AppEngineUtilities_Session_" + str(session_key), results[0])
+            memcache.set("_AppEngineUtilities_SessionData_" + str(session_key), results[0].get_items_ds())
+            logging.info('grabbed session from datastore')
+            return results[0]
+        else:
+            return None
+
+    def get_items(self):
+        """
+        Returns all the items stored in a session
+        """
+        items = memcache.get("_AppEngineUtilities_SessionData_" + str(self.session_key))
+        if items:
+            for item in items:
+                if item.deleted == True:
+                    item.delete()
+                    items.remove(item)
+            return items
+
+        query = _AppEngineUtilities_SessionData.all()
+        query.filter('session_key', self.session_key)
+        results = query.fetch(1000)
+        return results
+
+    def get_item(self, keyname = None):
+        """
+        Returns a single item from the memcache or datastore
+        """
+        mc = memcache.get("_AppEngineUtilities_SessionData_" + str(self.session_key))
+        if mc:
+            for item in mc:
+                if item.keyname == keyname:
+                    if item.deleted == True:
+                        item.delete()
+                        return None
+                    return item
+        query = _AppEngineUtilities_SessionData.all()
+        query.filter("session_key = ", self.session_key)
+        query.filter("keyname = ", keyname)
+        results = query.fetch(1)
+        if len(results) > 0:
+            memcache.set("_AppEngineUtilities_SessionData_" + str(self.session_key), self.get_items_ds())
+            return results[0]
+        return None
+
+    def get_items_ds(self):
+        """
+        This gets all the items straight from the datastore, does not
+        interact with the memcache.
+        """
+        query = _AppEngineUtilities_SessionData.all()
+        query.filter('session_key', self.session_key)
+        results = query.fetch(1000)
+        return results
+
+    def delete(self):
+        try:
+            query = _AppEngineUtilities_SessionData.all()
+            query.filter("session_key = ", self.session_key)
+            results = query.fetch(1000)
+            db.delete(results)
+            db.delete(self)
+            memcache.delete_multi(["_AppEngineUtilities_Session_" + str(self.session_key), "_AppEngineUtilities_SessionData_" + str(self.session_key)])
+        except:
+            mc = memcache.get("_AppEngineUtilities_Session_" + str(self.session_key))
+            mc.deleted = True
+            memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), mc)
+
+    def create_key(self):
+        """
+        Creates a unique key for the session.
+        """
+        self.session_key = time.time()
+        valid = False
+        while valid == False:
+            # verify session_key is unique
+            if memcache.get("_AppEngineUtilities_Session_" + str(self.session_key)):
+                self.session_key = self.session_key + 0.001
+            else:
+                query = _AppEngineUtilities_Session.all()
+                query.filter("session_key = ", self.session_key)
+                results = query.fetch(1)
+                if len(results) > 0:
+                    self.session_key = self.session_key + 0.001
+                else:
+                    try:
+                        self.put()
+                        memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), self)
+                    except:
+                        self.dirty = True
+                        memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), self)
+                    valid = True
+            
+class _AppEngineUtilities_SessionData(db.Model):
     """
     Model for the session data in the datastore.
     """
 
-    session = db.ReferenceProperty(_AppEngineUtilities_Session)
+    session_key = db.FloatProperty()
     keyname = db.StringProperty()
     content = db.BlobProperty()
+    dirty = db.BooleanProperty(default=False)
+    deleted = db.BooleanProperty(default=False)
+
+    def put(self):
+        """
+        Adds a keyname/value for session to the datastore and memcache
+        """
+        # update or insert in datastore
+        try:
+            db.put(self)
+            self.dirty = False
+        except:
+            self.dirty = True
+
+        # update or insert in memcache
+        mc_items = memcache.get("_AppEngineUtilities_SessionData_" + str(self.session_key))
+        if mc_items:
+            value_updated = False
+            for item in mc_items:
+                if value_updated == True:
+                    break
+                if item.keyname == self.keyname:
+                    logging.info("updating " + self.keyname)
+                    item.content = self.content
+                    memcache.set("_AppEngineUtilities_SessionData_" + str(self.session_key), mc_items)
+                    value_updated = True
+                    break
+            if value_updated == False:
+                #logging.info("adding " + self.keyname)
+                mc_items.append(self)
+                memcache.set("_AppEngineUtilities_SessionData_" + str(self.session_key), mc_items)
+
+    def delete(self):
+        """
+        Deletes an entity from the session in memcache and the datastore
+        """
+        logging.info("DELETING " + self.keyname)
+        try:
+            db.delete(self)
+        except:
+            self.deleted = True
+        mc_items = memcache.get("_AppEngineUtilities_SessionData_" + str(self.session_key))
+        value_handled = False
+        for item in mc_items:
+            if value_handled == True:
+                break
+            if item.keyname == self.keyname:
+                if self.deleted == True:
+                    item.deleted = True
+                else:
+                    mc_items.remove(item)
+                memcache.set("_AppEngineUtilities_SessionData_" + str(self.session_key), mc_items)
+        
 
 class _DatastoreWriter(object):
 
@@ -97,13 +304,14 @@ class _DatastoreWriter(object):
         sessdata = session._get(keyname=keyname)
         if sessdata is None:
             sessdata = _AppEngineUtilities_SessionData()
-            sessdata.session = session.session
+            sessdata.session_key = session.session.session_key
             sessdata.keyname = keyname
         sessdata.content = pickle.dumps(value)
         # UNPICKLING CACHE session.cache[keyname] = pickle.dumps(value)
         session.cache[keyname] = value
         sessdata.put()
-        session._set_memcache()
+        # todo _set_memcache() should be going away when this is done
+        # session._set_memcache()
 
 
 class _CookieWriter(object):
@@ -235,8 +443,8 @@ class Session(object):
             # check for existing cookie
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
-                self.session = self._get_session() # will return None if
-                                                   # sid expired
+                self.session = _AppEngineUtilities_Session.get_session(self.sid) # will return None if
+                                                                                 # sid expired
                 if self.session:
                     new_session = False
 
@@ -255,13 +463,14 @@ class Session(object):
                     self.session.ip = None
                 self.session.sid = [self.sid]
                 # do put() here to get the session key
-                key = self.session.put()
+                self.session.put()
             else:
                 # check the age of the token to determine if a new one
                 # is required
                 duration = datetime.timedelta(seconds=self.session_token_ttl)
                 session_age_limit = datetime.datetime.now() - duration
                 if self.session.last_activity < session_age_limit:
+                    logging.info("UPDATING SID LA = " + str(self.session.last_activity) + " - TL = " + str(session_age_limit))
                     self.sid = self.new_sid()
                     if len(self.session.sid) > 2:
                         self.session.sid.remove(self.session.sid[0])
@@ -282,6 +491,7 @@ class Session(object):
 
             if do_put:
                 if self.sid != None or self.sid != "":
+                    logging.info("doing put")
                     self.session.put()
 
         if self.set_cookie_expires:
@@ -305,10 +515,12 @@ class Session(object):
         """
         Create a new session id.
         """
-        sid = str(self.session.key()) + md5.new(repr(time.time()) + \
+        sid = str(self.session.session_key) + "_" +md5.new(repr(time.time()) + \
                 str(random.random())).hexdigest()
         return sid
 
+    '''
+    # removed as model how has get_session classmethod
     def _get_session(self):
         """
         Get the user's session from the datastore
@@ -328,7 +540,7 @@ class Session(object):
                 results[0].delete()
                 return None
             return results[0]
-
+    '''
     def _get(self, keyname=None):
         """
         Return all of the SessionData object data from the datastore onlye,
@@ -341,6 +553,11 @@ class Session(object):
         Args:
             keyname: The keyname of the value you are trying to retrieve.
         """
+        if keyname != None:
+            return self.session.get_item(keyname)
+        return self.session.get_items()
+        """
+        OLD
         query = _AppEngineUtilities_SessionData.all()
         query.filter('session', self.session)
         if keyname != None:
@@ -352,6 +569,7 @@ class Session(object):
         if keyname != None:
             return results[0]
         return results
+        """
 
     def _validate_key(self, keyname):
         """
@@ -386,6 +604,9 @@ class Session(object):
         """
         Delete the session and all session data.
         """
+        self.session.delete()
+        """
+        OLD
         if hasattr(self, "session"):
             sessiondata = self._get()
             # delete from datastore
@@ -402,7 +623,7 @@ class Session(object):
         self.output_cookie[self.cookie_name + '_data'] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
-
+        """
         # if the event class has been loaded, fire off the sessionDeleted event
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('sessionDelete')
@@ -435,17 +656,8 @@ class Session(object):
                 all_sessions_deleted = True
             else:
                 for result in results:
-                    memcache.delete('sid-' + str(result.key()))
                     result.delete()
 
-        while not all_data_deleted:
-            query = _AppEngineUtilities_SessionData.all()
-            results = query.fetch(75)
-            if len(results) is 0:
-                all_data_deleted = True
-            else:
-                for result in results:
-                    result.delete()
 
     def _clean_old_sessions(self):
         """
@@ -460,12 +672,15 @@ class Session(object):
         query.filter('last_activity <', session_age)
         results = query.fetch(50)
         for result in results:
+            """
+            OLD
             data_query = _AppEngineUtilities_SessionData.all()
             data_query.filter('session', result)
             data_results = data_query.fetch(1000)
             for data_result in data_results:
                 data_result.delete()
             memcache.delete('sid-'+str(result.key()))
+            """
             result.delete()
 
     # Implement Python container methods
@@ -486,15 +701,10 @@ class Session(object):
         if keyname in self.cookie_vals:
             return self.cookie_vals[keyname]
         if hasattr(self, "session"):
-            mc = memcache.get('sid-'+str(self.session.key()))
-            if mc is not None:
-                if keyname in mc:
-                    return mc[keyname]
             data = self._get(keyname)
             if data:
                 #UNPICKLING CACHE self.cache[keyname] = data.content
                 self.cache[keyname] = pickle.loads(data.content)
-                self._set_memcache()
                 return pickle.loads(data.content)
             else:
                 raise KeyError(str(keyname))
@@ -560,7 +770,6 @@ class Session(object):
             raise KeyError(str(keyname))
         if keyname in self.cache:
             del self.cache[keyname]
-        self._set_memcache()
 
     def __len__(self):
         """
@@ -568,9 +777,6 @@ class Session(object):
         """
         # check memcache first
         if hasattr(self, "session"):
-            mc = memcache.get('sid-'+str(self.session.key()))
-            if mc is not None:
-                return len(mc) + len(self.cookie_vals)
             results = self._get()
             if results is not None:
                 return len(results) + len(self.cookie_vals)
@@ -597,13 +803,8 @@ class Session(object):
         """
         # try memcache first
         if hasattr(self, "session"):
-            mc = memcache.get('sid-'+str(self.session.key()))
-            if mc is not None:
-                for k in mc:
-                    yield k
-            else:
-                for k in self._get():
-                    yield k.keyname
+            for k in self._get():
+                yield k.keyname
         for k in self.cookie_vals:
             yield k
 
@@ -617,6 +818,8 @@ class Session(object):
         #else:
         #    return []
 
+    '''
+    OLD
     def _set_memcache(self):
         """
         Set a memcache object with all the session data. Optionally you can
@@ -633,6 +836,7 @@ class Session(object):
 
             memcache.set('sid-'+str(self.session.key()), data, \
                 self.session_expire_time)
+    '''
 
     def cycle_key(self):
         """
@@ -671,7 +875,6 @@ class Session(object):
             for sd in sessiondata:
                 sd.delete()
         # delete from memcache
-        memcache.delete('sid-'+str(self.session.key()))
         self.cache = {}
         self.cookie_vals = {}
         self.output_cookie[self.cookie_name + '_data'] = \
@@ -760,6 +963,10 @@ class Session(object):
                             requests.
 
         Returns True/False
+
+        NOTE: TODO This currently only works when the datastore is working, which of course
+        is pointless for applications using the django middleware. This needs to be resolved
+        before merging back into the main project.
         """
 
         string_cookie = os.environ.get('HTTP_COOKIE', '')
