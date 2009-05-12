@@ -260,7 +260,6 @@ class _AppEngineUtilities_SessionData(db.Model):
         """
         Deletes an entity from the session in memcache and the datastore
         """
-        logging.info("DELETING " + self.keyname)
         try:
             db.delete(self)
         except:
@@ -604,7 +603,13 @@ class Session(object):
         """
         Delete the session and all session data.
         """
-        self.session.delete()
+        if hasattr(self, "session"):
+            self.session.delete()
+        self.cookie_vals = {}
+        self.cache = {}
+        self.output_cookie[self.cookie_name + '_data'] = \
+            simplejson.dumps(self.cookie_vals)
+        print self.output_cookie.output()
         """
         OLD
         if hasattr(self, "session"):
