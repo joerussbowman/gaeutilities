@@ -93,14 +93,14 @@ class _AppEngineUtilities_Session(db.Model):
         return self
 
     @classmethod
-    def get_session(cls, sid=None):
+    def get_session(cls, session_obj=None):
         """
         Uses the passed sid to get a session object from memcache, or datastore
         if a valid one exists.
         """
-        if sid == None:
+        if session_obj.sid == None:
             return None
-        session_key = sid.split('_')[0]
+        session_key = session_obj.sid.split('_')[0]
         session = memcache.get("_AppEngineUtilities_Session_" + str(session_key))
         if session:
             if session.deleted == True:
@@ -112,17 +112,25 @@ class _AppEngineUtilities_Session(db.Model):
                 session.working = True
                 memcache.set("_AppEngineUtilities_Session_" + str(session_key), session)
                 session.put()
-            if sid in session.sid:
+            if session_obj.sid in session.sid:
                 logging.info('grabbed session from memcache')
+                sessionAge = datetime.datetime.now() - session.last_activity
+                if sessionAge.seconds > session_obj.session_expire_time:
+                    session.delete()
+                    return None
                 return session
             else:
                 return None
  
         # Not in memcache, check datastore
         query = _AppEngineUtilities_Session.all()
-        query.filter("sid = ", sid)
+        query.filter("sid = ", session_obj.sid)
         results = query.fetch(1)
         if len(results) > 0:
+            sessionAge = datetime.datetime.now() - results[0].last_activity
+            if sessionAge.seconds > self.session_expire_time:
+                results[0].delete()
+                return None
             memcache.set("_AppEngineUtilities_Session_" + str(session_key), results[0])
             memcache.set("_AppEngineUtilities_SessionData_" + str(session_key), results[0].get_items_ds())
             logging.info('grabbed session from datastore')
@@ -442,7 +450,7 @@ class Session(object):
             # check for existing cookie
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
-                self.session = _AppEngineUtilities_Session.get_session(self.sid) # will return None if
+                self.session = _AppEngineUtilities_Session.get_session(self) # will return None if
                                                                                  # sid expired
                 if self.session:
                     new_session = False
@@ -519,7 +527,7 @@ class Session(object):
         return sid
 
     '''
-    # removed as model how has get_session classmethod
+    # removed as model now has get_session classmethod
     def _get_session(self):
         """
         Get the user's session from the datastore
