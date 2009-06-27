@@ -128,7 +128,7 @@ class _AppEngineUtilities_Session(db.Model):
         results = query.fetch(1)
         if len(results) > 0:
             sessionAge = datetime.datetime.now() - results[0].last_activity
-            if sessionAge.seconds > self.session_expire_time:
+            if sessionAge.seconds > session_obj.session_expire_time:
                 results[0].delete()
                 return None
             memcache.set("_AppEngineUtilities_Session_" + str(session_key), results[0])
