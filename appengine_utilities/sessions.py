@@ -196,8 +196,9 @@ class _AppEngineUtilities_Session(db.Model):
             memcache.delete_multi(["_AppEngineUtilities_Session_" + str(self.session_key), "_AppEngineUtilities_SessionData_" + str(self.session_key)])
         except:
             mc = memcache.get("_AppEngineUtilities_Session_" + str(self.session_key))
-            mc.deleted = True
-            memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), mc)
+            if mc:
+                mc.deleted = True
+                memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), mc)
 
     def create_key(self):
         """
