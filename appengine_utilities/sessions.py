@@ -198,7 +198,14 @@ class _AppEngineUtilities_Session(db.Model):
             mc = memcache.get("_AppEngineUtilities_Session_" + str(self.session_key))
             if mc:
                 mc.deleted = True
-                memcache.set("_AppEngineUtilities_Session_" + str(self.session_key), mc)
+            else:
+                # not in the memcache, check to see if it should be
+                query = _AppEngineUtilities_Session.all()
+                query.filter("sid = ", session_obj.sid)
+                results = query.fetch(1)
+                if len(results) > 0:
+                    results[0].deleted = True
+                    memcache.set("_AppEngineUtilities_Session_" + str(session_key), results[0])
 
     def create_key(self):
         """
