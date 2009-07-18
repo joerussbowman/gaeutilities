@@ -45,7 +45,6 @@ from google.appengine.api import memcache
 #django simplejson import, used for flash
 from django.utils import simplejson
 
-from rotmodel import ROTModel
 
 # settings, if you have these set elsewhere, such as your django settings file,
 # you'll need to adjust the values to pull from there.
