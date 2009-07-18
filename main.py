@@ -74,6 +74,7 @@ class SessionPage(webapp.RequestHandler):
         self.sess[keyname + '2'] = "test2"
         self.sess[3] = "test3"
         self.cookie_sess['cookie_test'] = "testing cookie values"
+        self.sess[u"unicode_key"] = u"unicode_value"
         if not 'viewCount' in self.sess:
             self.sess['viewCount'] = 1
         else:
@@ -108,6 +109,7 @@ class CookieSessionPage(webapp.RequestHandler):
             self.sess['viewCount'] = 1
         else:
             self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+        self.sess[u"unicode_key"] = u"unicode_value"
         session_length = len(self.sess)
         self.memcacheStats = memcache.get_stats()
         template_values = {
