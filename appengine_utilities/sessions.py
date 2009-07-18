@@ -500,6 +500,9 @@ class Session(object):
 
             self.output_cookie[cookie_name] = self.sid
             self.output_cookie[cookie_name]['path'] = cookie_path
+            if self.set_cookie_expires:
+                self.output_cookie[cookie_name]['expires'] = \
+                    self.session_expire_time
 
             # UNPICKLING CACHE self.cache['sid'] = pickle.dumps(self.sid)
             self.cache['sid'] = self.sid
