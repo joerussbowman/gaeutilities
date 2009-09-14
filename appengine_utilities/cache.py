@@ -37,11 +37,11 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 # settings
-DEFAULT_TIMEOUT = 3600 # cache expires after one hour (3600 sec)
-CLEAN_CHECK_PERCENT = 50 # 15% of all requests will clean the database
-MAX_HITS_TO_CLEAN = 100 # the maximum number of cache hits to clean on attempt
-
-
+try:
+    import settings
+except:
+    import settings_default as settings
+    
 class _AppEngineUtilities_Cache(db.Model):
     # It's up to the application to determine the format of their keys
     cachekey = db.StringProperty()
@@ -60,9 +60,9 @@ class Cache(object):
     urlFetch()), or the query objects themselves.
     """
 
-    def __init__(self, clean_check_percent = CLEAN_CHECK_PERCENT,
-      max_hits_to_clean = MAX_HITS_TO_CLEAN,
-        default_timeout = DEFAULT_TIMEOUT):
+    def __init__(self, clean_check_percent = settings.cache["CLEAN_CHECK_PERCENT"],
+      max_hits_to_clean = settings.cache["MAX_HITS_TO_CLEAN"],
+        default_timeout = settings.cache["DEFAULT_TIMEOUT"]):
         """
         Initializer
 
@@ -106,7 +106,7 @@ class Cache(object):
     def _validate_timeout(self, timeout):
         if timeout == None:
             timeout = datetime.datetime.now() +\
-            datetime.timedelta(seconds=DEFAULT_TIMEOUT)
+            datetime.timedelta(seconds=self.default_timeout)
         if type(timeout) == type(1):
             timeout = datetime.datetime.now() + \
                 datetime.timedelta(seconds = timeout)

@@ -28,13 +28,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from google.appengine.ext import db
 from cache import Cache
 
+try:
+    import settings
+except:
+    import settings_default as settings
+
 class Paginator(object):
     """
     This class is used for maintaining pagination objects.
     """
 
     @classmethod
-    def get(cls, count=10, q_filters={}, search=None, start=None, model=None, \
+    def get(cls, count=settings.paginator["DEFAULT_COUNT"], q_filters={}, search=None, start=None, model=None, \
             order='ASC', order_by='__key__'):
         """
         get queries the database on model, starting with key, ordered by
