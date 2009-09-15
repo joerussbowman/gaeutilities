@@ -200,7 +200,7 @@ class _AppEngineUtilities_Session(db.Model):
             else:
                 # not in the memcache, check to see if it should be
                 query = _AppEngineUtilities_Session.all()
-                query.filter(u"sid = ", session_obj.sid)
+                query.filter(u"sid = ", self.sid)
                 results = query.fetch(1)
                 if len(results) > 0:
                     results[0].deleted = True
