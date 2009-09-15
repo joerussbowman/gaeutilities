@@ -25,16 +25,57 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import time
 from google.appengine.ext import db
+from django.utils import simplejson
+
 
 class ROTModel(db.Model):
     """
-    ROTModel overrides the db.Model put function, having it retry
-    up to 3 times when it encounters a datastore timeout. This is
-    to try an maximize the chance the data makes it into the datastore
-    when attempted. If it fails, it raises the db.Timeout error and the
-    calling application will need to handle that.
+    ROTModel overrides the db.Model functions, adding retries on Timeout
+    exceptions.
     """
+
+    @classmethod
+    def get(cls):
+        # stub
+        pass
+
+    @classmethod
+    def get_by_id(cls):
+        # stub
+        pass
+
+    @classmethod
+    def get_by_key_name(cls):
+        # stub
+        pass
+
+    @classmethod
+    def get_or_insert(cls):
+        # stub
+        pass
+
+    @classmethod
+    def all(cls):
+        # stub
+        pass
+
+    @classmethod
+    def gql(cls):
+        # stub
+        pass
+
+    @classmethod
+    def kind(cls):
+        # stub
+        pass
+
+    @classmethod
+    def properties(cls):
+        # stub
+        pass
+
     def put(self):
         count = 0
         while count < 3:
@@ -42,5 +83,39 @@ class ROTModel(db.Model):
                 return db.Model.put(self)
             except db.Timeout:
                 count += 1
+                time.sleep(count)
         else:
             raise db.Timeout()
+
+    def key(self):
+        # stub
+        pass
+
+    def delete(self):
+        # stub
+        pass
+
+    def is_saved(self):
+        # stub
+        pass
+
+    def parent(self):
+        # stub
+        pass
+
+    def parent_key(self):
+        # stub
+        pass
+
+    def to_xml(self):
+        # stub
+        pass
+
+    def to_json(self):
+        """
+        Extra method added to return a model as json. Since to_xml is there
+        and simplejson exists in appengine, why not?
+        """
+        # stub
+        pass
+
