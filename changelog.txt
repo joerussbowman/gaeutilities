@@ -153,3 +153,7 @@ For example to log in a user you'd want to do something like this:
  - delete_item() added to session. Can be used to delete items, whether they exist or not
     and not throw KeyError. Optionally you can call with throw_exception set to True, and it will
     throw KeyError exceptions, as if you've done a "del session[key]"
+
+1.2.3
+ - added settings_default.py, can be copied to settings.py and modified to set
+   default settings for your application.

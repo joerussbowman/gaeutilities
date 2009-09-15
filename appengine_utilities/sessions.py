@@ -560,7 +560,7 @@ class Session(object):
     '''
     def _get(self, keyname=None):
         """
-        Return all of the SessionData object data from the datastore onlye,
+        Return all of the SessionData object data from the datastore only,
         unless keyname is specified, in which case only that instance of 
         SessionData is returned.
         Important: This does not interact with memcache and pulls directly
