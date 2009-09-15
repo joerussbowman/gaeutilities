@@ -826,8 +826,10 @@ class Session(object):
         """
         # try memcache first
         if hasattr(self, u"session"):
-            for k in self._get():
-                yield k.keyname
+            vals = self._get()
+            if vals is not None:
+                for k in vals:
+                    yield k.keyname
         for k in self.cookie_vals:
             yield k
 
