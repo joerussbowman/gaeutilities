@@ -30,23 +30,24 @@ __date__ ="$Sep 11, 2009 4:20:11 PM$"
 
 
 # Configuration settings for the session class.
-sessions = {    
+session = {    
     "COOKIE_NAME": "gaeutilities_session",
     "DEFAULT_COOKIE_PATH": "/",
-    "SESSION_EXPIRE_TIME": 7200, # sessions are valid for 7200 seconds (2 hours)
-    "INTEGRATE_FLASH": True, # integrate functionality from flash module?
-    "SET_COOKIE_EXPIRES": True, # Set to True to add expiration field to cookie
-    "WRITER":"datastore", # Use the datastore writer by default. cookie is the
-                        # other option.
-    "DATASTORE_BACKEND_SETTINGS": {
-        "CLEAN_CHECK_PERCENT": 50, # By default, 50% of all requests will clean
-                                # the datastore of expired sessions
-        "CHECK_IP": True, # validate sessions by IP
-        "CHECK_USER_AGENT": True, # validate sessions by user agent
-        "SESSION_TOKEN_TTL": 5, # Number of seconds a session token is valid for.
-        "UPDATE_LAST_ACTIVITY": 60, # Number of seconds that may pass before
-                                # last_activity is updated
-    },
+    "SESSION_EXPIRE_TIME": 7200,    # sessions are valid for 7200 seconds
+                                    # (2 hours)
+    "INTEGRATE_FLASH": True,        # integrate functionality from flash module?
+    "SET_COOKIE_EXPIRES": True,     # Set to True to add expiration field to
+                                    # cookie
+    "WRITER":"datastore",           # Use the datastore writer by default. 
+                                    # cookie is the other option.
+    "CLEAN_CHECK_PERCENT": 50,      # By default, 50% of all requests will clean
+                                    # the datastore of expired sessions
+    "CHECK_IP": True,               # validate sessions by IP
+    "CHECK_USER_AGENT": True,       # validate sessions by user agent
+    "SESSION_TOKEN_TTL": 5,         # Number of seconds a session token is valid
+                                    # for.
+    "UPDATE_LAST_ACTIVITY": 60,     # Number of seconds that may pass before
+                                    # last_activity is updated
 }
 
 # Configuration settings for the cache class

@@ -32,85 +32,93 @@ from django.utils import simplejson
 
 class ROTModel(db.Model):
     """
-    ROTModel overrides the db.Model functions, adding retries on Timeout
-    exceptions.
+    ROTModel overrides the db.Model functions, retying each method each time
+    a timeout exception is raised.
+
+    Also adds a to_json() method, to compliment to_xml()
     """
 
     @classmethod
-    def get(cls):
-        # stub
-        pass
-
-    @classmethod
-    def get_by_id(cls):
-        # stub
-        pass
-
-    @classmethod
-    def get_by_key_name(cls):
-        # stub
-        pass
-
-    @classmethod
-    def get_or_insert(cls):
-        # stub
-        pass
-
-    @classmethod
-    def all(cls):
-        # stub
-        pass
-
-    @classmethod
-    def gql(cls):
-        # stub
-        pass
-
-    @classmethod
-    def kind(cls):
-        # stub
-        pass
-
-    @classmethod
-    def properties(cls):
-        # stub
-        pass
-
-    def put(self):
+    def _run_query(cls, method, retries=3, *args, **kwargs):
         count = 0
-        while count < 3:
+        while count < retries:
             try:
-                return db.Model.put(self)
+                return method(*args, **kwargs)
             except db.Timeout:
                 count += 1
                 time.sleep(count)
         else:
             raise db.Timeout()
 
+
+    @classmethod
+    def get(cls, *args, **kwargs):
+        return cls._run_query(db.Model.get, args, kwargs)
+        pass
+
+    @classmethod
+    def get_by_id(cls, *args, **kwargs):
+        return cls._run_query(db.Model.get_by_id, args, kwargs)
+        pass
+
+    @classmethod
+    def get_by_key_name(cls, *args, **kwargs):
+        return cls._run_query(db.Model.get_by_key_name, args, kwargs)
+        pass
+
+    @classmethod
+    def get_or_insert(cls, *args, **kwargs):
+        return cls._run_query(db.Model.get_or_insert, args, kwargs)
+        pass
+
+    @classmethod
+    def all(cls):
+        return cls._run_query(db.Model.all)
+        pass
+
+    @classmethod
+    def gql(cls, *args, **kwargs):
+        return cls._run_query(db.Model.gql, args, kwargs)
+        pass
+
+    @classmethod
+    def kind(cls):
+        return cls._run_query(db.Model.kind)
+        pass
+
+    @classmethod
+    def properties(cls):
+        return cls._run_query(db.Model.properties)
+        pass
+
+    def put(self):
+        return self._run_query(db.Model.put, self, args, kwargs)
+
     def key(self):
-        # stub
+        return self._run_query(db.Model.key, self, args, kwargs)
         pass
 
     def delete(self):
-        # stub
+        return self._run_query(db.Model.delete, self, args, kwargs)
         pass
 
     def is_saved(self):
-        # stub
+        return self._run_query(db.Model.is_saved, self, args, kwargs)
         pass
 
     def parent(self):
-        # stub
+        return self._run_query(db.Model.parent, self, args, kwargs)
         pass
 
     def parent_key(self):
-        # stub
+        return self._run_query(db.Model.parent_key, self, args, kwargs)
         pass
 
     def to_xml(self):
-        # stub
+        return self._run_query(db.Model.to_xml, self, args, kwargs)
         pass
 
+    '''
     def to_json(self):
         """
         Extra method added to return a model as json. Since to_xml is there
@@ -118,4 +126,4 @@ class ROTModel(db.Model):
         """
         # stub
         pass
-
+    '''

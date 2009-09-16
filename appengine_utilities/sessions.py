@@ -45,12 +45,17 @@ from google.appengine.api import memcache
 #django simplejson import, used for flash
 from django.utils import simplejson
 
+# appengine_utilities import
+from rotmodel import ROTModel
 
-# settings, if you have these set elsewhere, such as your django settings file,
-# you'll need to adjust the values to pull from there.
+# settings
+try:
+    import settings
+except:
+    import settings_default as settings
 
 
-class _AppEngineUtilities_Session(db.Model):
+class _AppEngineUtilities_Session(ROTModel):
     """
     Model for the sessions in the datastore. This contains the identifier and
     validation information for the session.
@@ -231,7 +236,7 @@ class _AppEngineUtilities_Session(db.Model):
                         memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
                     valid = True
             
-class _AppEngineUtilities_SessionData(db.Model):
+class _AppEngineUtilities_SessionData(ROTModel):
     """
     Model for the session data in the datastore.
     """
@@ -367,31 +372,20 @@ class Session(object):
     data.
     """
 
-    COOKIE_NAME = "appengine-utilities-session-sid" # session token
-    DEFAULT_COOKIE_PATH = "/"
-    SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
-    CLEAN_CHECK_PERCENT = 50 # By default, 50% of all requests will clean the database
-    INTEGRATE_FLASH = True # integrate functionality from flash module?
-    CHECK_IP = True # validate sessions by IP
-    CHECK_USER_AGENT = True # validate sessions by user agent
-    SET_COOKIE_EXPIRES = True # Set to True to add expiration field to cookie
-    SESSION_TOKEN_TTL = 5 # Number of seconds a session token is valid for.
-    UPDATE_LAST_ACTIVITY = 60 # Number of seconds that may pass before
-                            # last_activity is updated
-    WRITER = "datastore" # Use the datastore writer by default. cookie is the
-                        # other option.
+    # variable declarations for class methods
+    COOKIE_NAME = settings.session["COOKIE_NAME"]
 
-
-    def __init__(self, cookie_path=DEFAULT_COOKIE_PATH,
-            cookie_name=COOKIE_NAME,
-            session_expire_time=SESSION_EXPIRE_TIME,
-            clean_check_percent=CLEAN_CHECK_PERCENT,
-            integrate_flash=INTEGRATE_FLASH, check_ip=CHECK_IP,
-            check_user_agent=CHECK_USER_AGENT,
-            set_cookie_expires=SET_COOKIE_EXPIRES,
-            session_token_ttl=SESSION_TOKEN_TTL,
-            last_activity_update=UPDATE_LAST_ACTIVITY,
-            writer=WRITER):
+    def __init__(self, cookie_path=settings.session["DEFAULT_COOKIE_PATH"],
+            cookie_name=settings.session["COOKIE_NAME"],
+            session_expire_time=settings.session["SESSION_EXPIRE_TIME"],
+            clean_check_percent=settings.session["CLEAN_CHECK_PERCENT"],
+            integrate_flash=settings.session["INTEGRATE_FLASH"],
+            check_ip=settings.session["CHECK_IP"],
+            check_user_agent=settings.session["CHECK_USER_AGENT"],
+            set_cookie_expires=settings.session["SET_COOKIE_EXPIRES"],
+            session_token_ttl=settings.session["SESSION_TOKEN_TTL"],
+            last_activity_update=settings.session["UPDATE_LAST_ACTIVITY"],
+            writer=settings.session["WRITER"]):
         """
         Initializer
 
@@ -536,28 +530,6 @@ class Session(object):
                 unicode(random.random())).hexdigest()
         return sid
 
-    '''
-    # removed as model now has get_session classmethod
-    def _get_session(self):
-        """
-        Get the user's session from the datastore
-        """
-        query = _AppEngineUtilities_Session.all()
-        query.filter('sid', self.sid)
-        if self.check_user_agent:
-            query.filter('ua', os.environ['HTTP_USER_AGENT'])
-        if self.check_ip:
-            query.filter('ip', os.environ['REMOTE_ADDR'])
-        results = query.fetch(1)
-        if len(results) is 0:
-            return None
-        else:
-            sessionAge = datetime.datetime.now() - results[0].last_activity
-            if sessionAge.seconds > self.session_expire_time:
-                results[0].delete()
-                return None
-            return results[0]
-    '''
     def _get(self, keyname=None):
         """
         Return all of the SessionData object data from the datastore only,
@@ -573,20 +545,6 @@ class Session(object):
         if keyname != None:
             return self.session.get_item(keyname)
         return self.session.get_items()
-        """
-        OLD
-        query = _AppEngineUtilities_SessionData.all()
-        query.filter('session', self.session)
-        if keyname != None:
-            query.filter('keyname =', keyname)
-        results = query.fetch(1000)
-
-        if len(results) is 0:
-            return None
-        if keyname != None:
-            return results[0]
-        return results
-        """
 
     def _validate_key(self, keyname):
         """
@@ -628,25 +586,6 @@ class Session(object):
         self.output_cookie[self.cookie_name + "_data"] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
-        """
-        OLD
-        if hasattr(self, "session"):
-            sessiondata = self._get()
-            # delete from datastore
-            if sessiondata is not None:
-                for sd in sessiondata:
-                    sd.delete()
-            # delete from memcache
-            memcache.delete('sid-'+unicode(self.session.key()))
-            # delete the session now that all items that reference it are deleted.
-            self.session.delete()
-        # unset any cookie values that may exist
-        self.cookie_vals = {}
-        self.cache = {}
-        self.output_cookie[self.cookie_name + '_data'] = \
-            simplejson.dumps(self.cookie_vals)
-        print self.output_cookie.output()
-        """
         # if the event class has been loaded, fire off the sessionDeleted event
         if u"AEU_Events" in __main__.__dict__:
             __main__.AEU_Events.fire_event(u"sessionDelete")
