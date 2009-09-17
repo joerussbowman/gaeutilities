@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import time
+from google.appengine.api import datastore
 from google.appengine.ext import db
 
 class ROTModel(db.Model):
@@ -58,50 +59,44 @@ class ROTModel(db.Model):
         else:
             raise db.Timeout()
 
-    # TODO: this isn't working
-    #@classmethod
-    #def get_by_key_name(cls, key_names, parent=None):
-    #    count = 0
-    #    while count < 3:
-    #        try:
-    #            return db.Model.get_by_key_name(key_names, parent)
-    #        except db.Timeout():
-    #            count += 1
-    #            time.sleep(count)
-    #    else:
-    #        raise db.Timeout()
+    @classmethod
+    def get_by_key_name(cls, key_names, parent=None):
+        if isinstance(parent, db.Model):
+            parent = parent.key()
+        key_names, multiple = datastore.NormalizeAndTypeCheck(key_names, basestring)
+        keys = [datastore.Key.from_path(cls.kind(), name, parent=parent)
+                for name in key_names]
+        count = 0
+        if multiple:
+            while count < 3:
+                try:
+                    return db.get(keys)
+                except db.Timeout():
+                    count += 1
+                    time.sleep(count)
+        else:
+            while count < 3:
+                try:
+                    return db.get(*keys)
+                except db.Timeout():
+                    count += 1
+                    time.sleep(count)
 
-    # TODO: This isn't working for some reason when specifying a parent
-    # It's creating an entity of kind Model, rather than the model kind
-    # it should be
-    #@classmethod
-    #def get_or_insert(cls, key_name, **kwargs):
-    #    count = 0
-    #    while count < 3:
-    #        try:
-    #            return db.Model.get_or_insert(key_name, **kwargs)
-    #        except db.Timeout():
-    #            count += 1
-    #            time.sleep(count)
-    #    else:
-    #        raise db.Timeout()
+    @classmethod
+    def get_or_insert(cls, key_name, **kwargs):
+        def txn():
+            entity = cls.get_by_key_name(key_name, parent=kwargs.get('parent'))
+            if entity is None:
+                entity = cls(key_name=key_name, **kwargs)
+                entity.put()
+            return entity
+        return db.run_in_transaction(txn)
 
     def put(self):
         count = 0
         while count < 3:
             try:
                 return db.Model.put(self)
-            except db.Timeout():
-                count += 1
-                time.sleep(count)
-        else:
-            raise db.Timeout()
-
-    def key(self):
-        count = 0
-        while count < 3:
-            try:
-                return db.Model.key(self)
             except db.Timeout():
                 count += 1
                 time.sleep(count)
@@ -119,51 +114,4 @@ class ROTModel(db.Model):
         else:
             raise db.Timeout()
 
-    def is_saved(self):
-        count = 0
-        while count < 3:
-            try:
-                return db.Model.is_saved(self)
-            except db.Timeout():
-                count += 1
-                time.sleep(count)
-        else:
-            raise db.Timeout()
-        pass
-
-    def parent(self):
-        count = 0
-        while count < 3:
-            try:
-                return db.Model.parent(self)
-            except db.Timeout():
-                count += 1
-                time.sleep(count)
-        else:
-            raise db.Timeout()
-        pass
-
-    def parent_key(self):
-        count = 0
-        while count < 3:
-            try:
-                return db.Model.parent_key(self)
-            except db.Timeout():
-                count += 1
-                time.sleep(count)
-        else:
-            raise db.Timeout()
-        pass
-
-    def to_xml(self):
-        count = 0
-        while count < 3:
-            try:
-                return db.Model.to_xml(self)
-            except db.Timeout():
-                count += 1
-                time.sleep(count)
-        else:
-            raise db.Timeout()
-        pass
 
