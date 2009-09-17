@@ -16,9 +16,11 @@ from appengine_utilities import sessions
 from appengine_utilities import flash
 from appengine_utilities import event
 from appengine_utilities import cache
+from appengine_utilities.rotmodel import ROTModel
 import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
+from google.appengine.ext import db
 
 class MainPage(webapp.RequestHandler):
   def __init__(self):
@@ -173,6 +175,130 @@ class CachePage(webapp.RequestHandler):
     self.response.out.write(template.render(path, template_values))
 
 
+class TestROTModel(ROTModel):
+    testval = db.IntegerProperty()
+
+class ROTModelPage(webapp.RequestHandler):
+  def get(self):
+      template_values = {}
+
+      # create a model test
+      model1 = TestROTModel(key_name="testmodel1", testval=1)
+      if model1:
+          template_values["modelcreate"] = "OK"
+      else:
+          template_values["modelcreate"] = "ERROR"
+
+      # is_saved test 1
+      if model1.is_saved() is False:
+          template_values["savedtest1"] = "OK"
+      else:
+          template_values["savedtest1"] = "ERROR"
+
+      # model put test
+      model_key = model1.put()
+      if model_key:
+          template_values["puttest"] = "OK"
+      else:
+          template_values["puttest"] = "ERROR"
+
+      # is_saved test 2
+      if model1.is_saved() == True:
+          template_values["savedtest2"] = "OK"
+      else:
+          template_values["savedtest2"] = "ERROR"
+
+      # get test single
+      singletest = TestROTModel.get(model_key)
+      if singletest:
+          template_values["singleget"] = "OK"
+      else:
+          template_values["singleget"] = "ERROR"
+
+      # get_or_insert test
+      model2 = TestROTModel.get_or_insert("testmodel2", parent=model1, testval=2)
+      if model2:
+          template_values["get_or_insert"] = "OK"
+          model2_key = model2.put()
+      else:
+          template_values["get_or_insert"] = "ERROR"
+
+      # get test multi
+      multitest = TestROTModel.get([model_key, model2_key])
+      if len(multitest) > 1:
+          template_values["multiget"] = "OK"
+      else:
+          template_values["multiget"] = "ERROR"
+
+      # key test
+      model2_key = model2.key()
+      if model2_key:
+          template_values["keytest"] = "OK"
+      else:
+          template_values["keytest"] = "ERROR"
+
+      # set strings for key names
+      model_keyname = "testmodel1"
+      model2_keyname = "testmodel2"
+
+      # get_by_key_name single
+      singlekeyname = TestROTModel.get_by_key_name(model_keyname)
+      if singlekeyname:
+          template_values["getbykeynamesingle"] = "OK"
+      else:
+          template_values["getbykeynamesingle"] = "ERROR"
+
+      # get_by_key_name multi
+      multikeyname = TestROTModel.get_by_key_name([model_keyname, model2_keyname])
+      if multikeyname:
+          template_values["getbykeynamemulti"] = "OK"
+      else:
+          template_values["getbykeynamemulti"] = "ERROR"
+
+      # all test
+      alltest = TestROTModel.all()
+      results = alltest.fetch(20)
+      if len(results) > 0:
+          template_values["alltest"] = "OK"
+      else:
+          template_values["alltest"] = "ERROR"
+
+      # gql test
+      gqltest = TestROTModel.gql("WHERE testval = :1", 1)
+      results = gqltest.fetch(20)
+      if len(results) > 0:
+          template_values["gqltest"] = "OK"
+      else:
+          template_values["gqltest"] = "ERROR"
+
+      # parent test
+      parenttest = model2.parent()
+      if parenttest:
+          template_values["parenttest"] = "OK"
+      else:
+          template_values["parenttest"] = "ERROR"
+
+      # parent_key test
+      parentkeytest = model2.parent_key()
+      if parentkeytest == model_key:
+          template_values["parentkeytest"] = "OK"
+      else:
+          template_values["parentkeytest"] = "ERROR"
+
+      # delete test
+      model1.delete()
+      model2.delete()
+
+      if TestROTModel.get(model_key) == None:
+          template_values["deletetest"] = "OK"
+      else:
+          template_values["deletetest"] = "ERROR"
+
+
+      path = os.path.join(os.path.dirname(__file__), 'templates/rotmodel.html')
+      self.response.out.write(template.render(path, template_values))
+
+
 def main():
   application = webapp.WSGIApplication(
                                        [('/', MainPage),
@@ -181,7 +307,8 @@ def main():
                                        ('/ajaxsession', AjaxSessionPage),
                                        ('/flash', FlashPage),
                                        ('/event', EventPage),
-                                       ('/cache', CachePage)],
+                                       ('/cache', CachePage),
+                                       ('/rotmodel', ROTModelPage)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

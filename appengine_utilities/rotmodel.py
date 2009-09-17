@@ -27,103 +27,141 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time
 from google.appengine.ext import db
-from django.utils import simplejson
-
 
 class ROTModel(db.Model):
     """
     ROTModel overrides the db.Model functions, retying each method each time
     a timeout exception is raised.
-
-    Also adds a to_json() method, to compliment to_xml()
     """
 
     @classmethod
-    def _run_query(cls, method, retries=3, *args, **kwargs):
+    def get(cls, keys):
         count = 0
-        while count < retries:
+        while count < 3:
             try:
-                return method(*args, **kwargs)
-            except db.Timeout:
+                return db.Model.get(keys)
+            except db.Timeout():
                 count += 1
                 time.sleep(count)
         else:
             raise db.Timeout()
 
-
     @classmethod
-    def get(cls, *args, **kwargs):
-        return cls._run_query(db.Model.get, args, kwargs)
-        pass
+    def get_by_id(cls, ids, parent=None):
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.get_by_id(ids, parent)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
 
-    @classmethod
-    def get_by_id(cls, *args, **kwargs):
-        return cls._run_query(db.Model.get_by_id, args, kwargs)
-        pass
+    # TODO: this isn't working
+    #@classmethod
+    #def get_by_key_name(cls, key_names, parent=None):
+    #    count = 0
+    #    while count < 3:
+    #        try:
+    #            return db.Model.get_by_key_name(key_names, parent)
+    #        except db.Timeout():
+    #            count += 1
+    #            time.sleep(count)
+    #    else:
+    #        raise db.Timeout()
 
-    @classmethod
-    def get_by_key_name(cls, *args, **kwargs):
-        return cls._run_query(db.Model.get_by_key_name, args, kwargs)
-        pass
-
-    @classmethod
-    def get_or_insert(cls, *args, **kwargs):
-        return cls._run_query(db.Model.get_or_insert, args, kwargs)
-        pass
-
-    @classmethod
-    def all(cls):
-        return cls._run_query(db.Model.all)
-        pass
-
-    @classmethod
-    def gql(cls, *args, **kwargs):
-        return cls._run_query(db.Model.gql, args, kwargs)
-        pass
-
-    @classmethod
-    def kind(cls):
-        return cls._run_query(db.Model.kind)
-        pass
-
-    @classmethod
-    def properties(cls):
-        return cls._run_query(db.Model.properties)
-        pass
+    # TODO: This isn't working for some reason when specifying a parent
+    # @classmethod
+    # def get_or_insert(cls, key_name, **kwargs):
+    #     count = 0
+    #     while count < 3:
+    #         try:
+    #             return db.Model.get_or_insert(key_name, **kwargs)
+    #         except db.Timeout():
+    #             count += 1
+    #             time.sleep(count)
+    #     else:
+    #         raise db.Timeout()
 
     def put(self):
-        return self._run_query(db.Model.put, self, args, kwargs)
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.put(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
 
     def key(self):
-        return self._run_query(db.Model.key, self, args, kwargs)
-        pass
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.key(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
 
     def delete(self):
-        return self._run_query(db.Model.delete, self, args, kwargs)
-        pass
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.delete(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
 
     def is_saved(self):
-        return self._run_query(db.Model.is_saved, self, args, kwargs)
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.is_saved(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
         pass
 
     def parent(self):
-        return self._run_query(db.Model.parent, self, args, kwargs)
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.parent(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
         pass
 
     def parent_key(self):
-        return self._run_query(db.Model.parent_key, self, args, kwargs)
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.parent_key(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
         pass
 
     def to_xml(self):
-        return self._run_query(db.Model.to_xml, self, args, kwargs)
+        count = 0
+        while count < 3:
+            try:
+                return db.Model.to_xml(self)
+            except db.Timeout():
+                count += 1
+                time.sleep(count)
+        else:
+            raise db.Timeout()
         pass
 
-    '''
-    def to_json(self):
-        """
-        Extra method added to return a model as json. Since to_xml is there
-        and simplejson exists in appengine, why not?
-        """
-        # stub
-        pass
-    '''

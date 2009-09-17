@@ -11,6 +11,12 @@ indexes:
 # your application using appcfg.py.
 
 # Unused in query history -- copied from input.
+- kind: Model
+  properties:
+  - name: cachekey
+  - name: timeout
+
+# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey
