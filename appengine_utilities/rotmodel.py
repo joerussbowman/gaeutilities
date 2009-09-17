@@ -72,17 +72,19 @@ class ROTModel(db.Model):
     #        raise db.Timeout()
 
     # TODO: This isn't working for some reason when specifying a parent
-    # @classmethod
-    # def get_or_insert(cls, key_name, **kwargs):
-    #     count = 0
-    #     while count < 3:
-    #         try:
-    #             return db.Model.get_or_insert(key_name, **kwargs)
-    #         except db.Timeout():
-    #             count += 1
-    #             time.sleep(count)
-    #     else:
-    #         raise db.Timeout()
+    # It's creating an entity of kind Model, rather than the model kind
+    # it should be
+    #@classmethod
+    #def get_or_insert(cls, key_name, **kwargs):
+    #    count = 0
+    #    while count < 3:
+    #        try:
+    #            return db.Model.get_or_insert(key_name, **kwargs)
+    #        except db.Timeout():
+    #            count += 1
+    #            time.sleep(count)
+    #    else:
+    #        raise db.Timeout()
 
     def put(self):
         count = 0
