@@ -81,9 +81,11 @@ class _AppEngineUtilities_Session(ROTModel):
         Returns the session object.
         """
         if self.session_key:
-            memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key), self)
         else:
-            # new session, generate a new key, which will handle the put and set the memcache
+            # new session, generate a new key, which will handle the
+            # put and set the memcache
             self.create_key()
 
         self.last_activity = datetime.datetime.now()
@@ -91,10 +93,12 @@ class _AppEngineUtilities_Session(ROTModel):
         try:
             self.dirty = False
             db.put(self)
-            memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key), self)
         except:
             self.dirty = True
-            memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key), self)
 
         return self
 
@@ -104,23 +108,27 @@ class _AppEngineUtilities_Session(ROTModel):
         Uses the passed objects sid to get a session object from memcache,
         or datastore if a valid one exists.
 
-        Args: session_obj: a session object
+        Args:
+            session_obj: a session object
 
-        Returns session object.
+        Returns a validated session object.
         """
         if session_obj.sid == None:
             return None
         session_key = session_obj.sid.split(u'_')[0]
-        session = memcache.get(u"_AppEngineUtilities_Session_" + unicode(session_key))
+        session = memcache.get(u"_AppEngineUtilities_Session_" + \
+            unicode(session_key))
         if session:
             if session.deleted == True:
                 session.delete()
                 return None
             if session.dirty == True and session.working != False:
-                # the working bit is used to make sure multiple requests, which can happen
-                # with ajax oriented sites, don't try to put at the same time
+                # the working bit is used to make sure multiple requests,
+                # which can happen with ajax oriented sites, don't try to put
+                # at the same time
                 session.working = True
-                memcache.set(u"_AppEngineUtilities_Session_" + unicode(session_key), session)
+                memcache.set(u"_AppEngineUtilities_Session_" + \
+                    unicode(session_key), session)
                 session.put()
             if session_obj.sid in session.sid:
                 sessionAge = datetime.datetime.now() - session.last_activity
@@ -140,8 +148,10 @@ class _AppEngineUtilities_Session(ROTModel):
             if sessionAge.seconds > session_obj.session_expire_time:
                 results[0].delete()
                 return None
-            memcache.set(u"_AppEngineUtilities_Session_" + unicode(session_key), results[0])
-            memcache.set(u"_AppEngineUtilities_SessionData_" + unicode(session_key), results[0].get_items_ds())
+            memcache.set(u"_AppEngineUtilities_Session_" + \
+                unicode(session_key), results[0])
+            memcache.set(u"_AppEngineUtilities_SessionData_" + \
+                unicode(session_key), results[0].get_items_ds())
             return results[0]
         else:
             return None
@@ -151,7 +161,8 @@ class _AppEngineUtilities_Session(ROTModel):
         Returns all the items stored in a session. Queries memcache first
         and will try the datastore next.
         """
-        items = memcache.get(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key))
+        items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
+            unicode(self.session_key))
         if items:
             for item in items:
                 if item.deleted == True:
@@ -166,9 +177,15 @@ class _AppEngineUtilities_Session(ROTModel):
 
     def get_item(self, keyname = None):
         """
-        Returns a single item from the memcache or datastore
+        Returns a single session data item from the memcache or datastore
+
+        Args:
+            keyname: keyname of the session data object
+
+        Returns the session data object if it exists, otherwise returns None
         """
-        mc = memcache.get(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key))
+        mc = memcache.get(u"_AppEngineUtilities_SessionData_" + \
+            unicode(self.session_key))
         if mc:
             for item in mc:
                 if item.keyname == keyname:
@@ -181,14 +198,17 @@ class _AppEngineUtilities_Session(ROTModel):
         query.filter(u"keyname = ", keyname)
         results = query.fetch(1)
         if len(results) > 0:
-            memcache.set(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key), self.get_items_ds())
+            memcache.set(u"_AppEngineUtilities_SessionData_" + \
+                unicode(self.session_key), self.get_items_ds())
             return results[0]
         return None
 
     def get_items_ds(self):
         """
-        This gets all the items straight from the datastore, does not
-        interact with the memcache.
+        This gets all session data objects from the datastore, bypassing
+        memcache.
+
+        Returns a list of session data entities.
         """
         query = _AppEngineUtilities_SessionData.all()
         query.filter(u"session_key", self.session_key)
@@ -196,15 +216,25 @@ class _AppEngineUtilities_Session(ROTModel):
         return results
 
     def delete(self):
+        """
+        Deletes a session and all it's associated data from the datastore and
+        memcache.
+
+        Returns True
+        """
         try:
             query = _AppEngineUtilities_SessionData.all()
             query.filter(u"session_key = ", self.session_key)
             results = query.fetch(1000)
             db.delete(results)
             db.delete(self)
-            memcache.delete_multi([u"_AppEngineUtilities_Session_" + unicode(self.session_key), u"_AppEngineUtilities_SessionData_" + unicode(self.session_key)])
+            memcache.delete_multi([u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key), \
+                u"_AppEngineUtilities_SessionData_" + \
+                unicode(self.session_key)])
         except:
-            mc = memcache.get(u"_AppEngineUtilities_Session_" + unicode(self.session_key))
+            mc = memcache.get(u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key))
             if mc:
                 mc.deleted = True
             else:
@@ -214,17 +244,22 @@ class _AppEngineUtilities_Session(ROTModel):
                 results = query.fetch(1)
                 if len(results) > 0:
                     results[0].deleted = True
-                    memcache.set(u"_AppEngineUtilities_Session_" + unicode(session_key), results[0])
+                    memcache.set(u"_AppEngineUtilities_Session_" + \
+                        unicode(session_key), results[0])
+        return True
 
     def create_key(self):
         """
         Creates a unique key for the session.
+
+        Returns the key value as a unicode string.
         """
         self.session_key = time.time()
         valid = False
         while valid == False:
             # verify session_key is unique
-            if memcache.get(u"_AppEngineUtilities_Session_" + unicode(self.session_key)):
+            if memcache.get(u"_AppEngineUtilities_Session_" + \
+                unicode(self.session_key)):
                 self.session_key = self.session_key + 0.001
             else:
                 query = _AppEngineUtilities_Session.all()
@@ -235,11 +270,14 @@ class _AppEngineUtilities_Session(ROTModel):
                 else:
                     try:
                         self.put()
-                        memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
+                        memcache.set(u"_AppEngineUtilities_Session_" + \
+                            unicode(self.session_key), self)
                     except:
                         self.dirty = True
-                        memcache.set(u"_AppEngineUtilities_Session_" + unicode(self.session_key), self)
+                        memcache.set(u"_AppEngineUtilities_Session_" + \
+                            unicode(self.session_key), self)
                     valid = True
+        return unicode(self.session_key)
             
 class _AppEngineUtilities_SessionData(ROTModel):
     """
@@ -255,16 +293,20 @@ class _AppEngineUtilities_SessionData(ROTModel):
     def put(self):
         """
         Adds a keyname/value for session to the datastore and memcache
+
+        Returns the key from the datastore put or u"dirty"
         """
         # update or insert in datastore
         try:
-            db.put(self)
+            return_val = db.put(self)
             self.dirty = False
         except:
+            return_val = u"dirty"
             self.dirty = True
 
         # update or insert in memcache
-        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key))
+        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
+            unicode(self.session_key))
         if mc_items:
             value_updated = False
             for item in mc_items:
@@ -272,22 +314,28 @@ class _AppEngineUtilities_SessionData(ROTModel):
                     break
                 if item.keyname == self.keyname:
                     item.content = self.content
-                    memcache.set(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key), mc_items)
+                    memcache.set(u"_AppEngineUtilities_SessionData_" + \
+                        unicode(self.session_key), mc_items)
                     value_updated = True
                     break
             if value_updated == False:
                 mc_items.append(self)
-                memcache.set(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key), mc_items)
+                memcache.set(u"_AppEngineUtilities_SessionData_" + \
+                    unicode(self.session_key), mc_items)
+        return return_val
 
     def delete(self):
         """
         Deletes an entity from the session in memcache and the datastore
+
+        Returns True
         """
         try:
             db.delete(self)
         except:
             self.deleted = True
-        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key))
+        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
+            unicode(self.session_key))
         value_handled = False
         for item in mc_items:
             if value_handled == True:
@@ -297,7 +345,9 @@ class _AppEngineUtilities_SessionData(ROTModel):
                     item.deleted = True
                 else:
                     mc_items.remove(item)
-                memcache.set(u"_AppEngineUtilities_SessionData_" + unicode(self.session_key), mc_items)
+                memcache.set(u"_AppEngineUtilities_SessionData_" + \
+                    unicode(self.session_key), mc_items)
+        return True
         
 
 class _DatastoreWriter(object):
@@ -309,6 +359,8 @@ class _DatastoreWriter(object):
         Args:
             keyname: The keyname of the mapping.
             value: The value of the mapping.
+
+        Returns the model entity key
         """
         keyname = session._validate_key(keyname)
         if value is None:
@@ -329,11 +381,9 @@ class _DatastoreWriter(object):
             sessdata.session_key = session.session.session_key
             sessdata.keyname = keyname
         sessdata.content = pickle.dumps(value)
-        # UNPICKLING CACHE session.cache[keyname] = pickle.dumps(value)
+
         session.cache[keyname] = value
-        sessdata.put()
-        # todo _set_memcache() should be going away when this is done
-        # session._set_memcache()
+        return sessdata.put()
 
 
 class _CookieWriter(object):
@@ -344,6 +394,8 @@ class _CookieWriter(object):
         Args:
             keyname: The keyname of the mapping.
             value: The value of the mapping.
+
+        Returns True
         """
         keyname = session._validate_key(keyname)
         if value is None:
@@ -353,29 +405,86 @@ class _CookieWriter(object):
         session.cookie_vals[keyname] = value
         # update the requests session cache as well.
         session.cache[keyname] = value
+        # simplejson will raise any error I'd raise about an invalid value
+        # so let it raise exceptions
         session.output_cookie[session.cookie_name + "_data"] = \
             simplejson.dumps(session.cookie_vals)
         print session.output_cookie.output()
+        return True
 
 class Session(object):
     """
-    Sessions used to maintain user presence between requests.
+    Sessions are used to maintain user presence between requests.
 
-    Sessions store a unique id as a cookie in the browser and
-    referenced in a datastore object. This maintains user presence
-    by validating requests as visits from the same browser.
+    Sessions can either be stored server side in the datastore/memcache, or
+    be kept entirely as cookies. This is set either with the settings file
+    or on initialization, using the writer argument/setting field. Valid
+    values are "datastore" or "cookie".
 
-    You can add extra data to the session object by using it
-    as a dictionary object. Values can be any python object that
-    can be pickled.
+    Session can be used as a standard dictionary object.
+        session = appengine_utilities.sessions.Session()
+        session["keyname"] = "value" # sets keyname to value
+        print session["keyname"] # will print value
 
-    For extra performance, session objects are also store in
-    memcache and kept consistent with the datastore. This
-    increases the performance of read requests to session
-    data.
+    Datastore Writer:
+        The datastore writer was written with the focus being on security,
+        reliability, and performance. In that order.
+
+        It is based off of a session token system. All data is stored
+        server side in the datastore and memcache. A token is given to
+        the browser, and stored server side. Optionally (and on by default),
+        user agent and ip checking is enabled. Tokens have a configurable
+        time to live (TTL), which defaults to 5 seconds. The current token,
+        plus the previous 2, are valid for any request. This is done in order
+        to manage ajax enabled sites which may have more than on request
+        happening at a time. This means any token is valid for 15 seconds.
+        A request with a token who's TTL has passed will have a new token
+        generated.
+
+        In order to take advantage of the token system for an authentication
+        system, you will want to tie sessions to accounts, and make sure
+        only one session is valid for an account. You can do this by setting
+        a db.ReferenceProperty(_Appengine_Utilities_Session) attribute on
+        your user Model, and use the get_ds_session() method on a valid
+        session to populate it on login.
+
+        Note that even with this complex system, sessions can still be hijacked
+        and it will take the user logging in to retrieve the account. In the
+        future an ssl only cookie option may be implemented for the datastore
+        writer, which would further protect the session token from being
+        sniffed, however it would be restricted to using cookies on the
+        .appspot.com domain, and ssl requests are a finite resource. This is
+        why such a thing is not currently implemented.
+
+        Session data objects are stored in the datastore pickled, so any
+        python object is valid for storage.
+
+    Cookie Writer:
+        Sessions using the cookie writer are stored entirely in the browser
+        and no interaction with the datastore is required. This creates
+        a drastic improvement in performance, but provides no security for
+        session hijack. This is useful for requests where identity is not
+        important, but you wish to keep state between requests.
+
+        Information is stored in a json format, as pickled data from the
+        server is unreliable.
+
+        Note: There is no checksum validation of session data on this method,
+        it's streamlined for pure performance. If you need to make sure data
+        is not tampered with, use the datastore writer which stores the data
+        server side.
+
+    django-middleware:
+        Included with the GAEUtilties project is a
+        django-middleware.middleware.SessionMiddleware which can be included in
+        your settings file. This uses the cookie writer for anonymous requests,
+        and you can switch to the datastore writer on user login. This will
+        require an extra set in your login process of calling
+        request.session.save() once you validated the user information. This
+        will convert the cookie writer based session to a datastore writer.
     """
 
-    # variable declarations for class methods
+    # cookie name declaration for class methods
     COOKIE_NAME = settings.session["COOKIE_NAME"]
 
     def __init__(self, cookie_path=settings.session["DEFAULT_COOKIE_PATH"],
@@ -421,7 +530,7 @@ class Session(object):
         self.writer = writer
 
         # make sure the page is not cached in the browser
-        self.no_cache_headers()
+        print self.no_cache_headers()
         # Check the cookie and, if necessary, create a new one.
         self.cache = {}
         string_cookie = os.environ.get(u"HTTP_COOKIE", u"")
@@ -435,8 +544,9 @@ class Session(object):
                 # values available for all gets immediately.
             for k in self.cookie_vals:
                 self.cache[k] = self.cookie_vals[k]
-                self.output_cookie[self.cookie_name + "_data"] = self.cookie[self.cookie_name + "_data"]
-            # sync the input cookie with the output cookie
+                # sync the input cookie with the output cookie
+                self.output_cookie[self.cookie_name + "_data"] = \
+                    self.cookie[self.cookie_name + "_data"]
         except:
             self.cookie_vals = {}
 
@@ -454,8 +564,8 @@ class Session(object):
             # check for existing cookie
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
-                self.session = _AppEngineUtilities_Session.get_session(self) # will return None if
-                                                                                 # sid expired
+                # The following will return None if the sid has expired.
+                self.session = _AppEngineUtilities_Session.get_session(self)
                 if self.session:
                     new_session = False
 
@@ -490,7 +600,8 @@ class Session(object):
                     self.sid = self.session.sid[-1]
                     # check if last_activity needs updated
                     ula = datetime.timedelta(seconds=self.last_activity_update)
-                    if datetime.datetime.now() > self.session.last_activity + ula:
+                    if datetime.datetime.now() > self.session.last_activity + \
+                        ula:
                         do_put = True
 
             self.output_cookie[cookie_name] = self.sid
@@ -499,7 +610,6 @@ class Session(object):
                 self.output_cookie[cookie_name]["expires"] = \
                     self.session_expire_time
 
-            # UNPICKLING CACHE self.cache['sid'] = pickle.dumps(self.sid)
             self.cache[u"sid"] = self.sid
 
             if do_put:
@@ -526,22 +636,30 @@ class Session(object):
     def new_sid(self):
         """
         Create a new session id.
+
+        Returns session id as a unicode string.
         """
-        sid = unicode(self.session.session_key) + "_" +hashlib.md5(repr(time.time()) + \
+        sid = unicode(self.session.session_key) + "_" + \
+                hashlib.md5(repr(time.time()) + \
                 unicode(random.random())).hexdigest()
         return sid
 
     def _get(self, keyname=None):
         """
+        private method
+        
         Return all of the SessionData object data from the datastore only,
         unless keyname is specified, in which case only that instance of 
         SessionData is returned.
+
         Important: This does not interact with memcache and pulls directly
         from the datastore. This also does not get items from the cookie
         store.
 
         Args:
             keyname: The keyname of the value you are trying to retrieve.
+
+        Returns a list of datastore entities.
         """
         if keyname != None:
             return self.session.get_item(keyname)
@@ -549,7 +667,11 @@ class Session(object):
 
     def _validate_key(self, keyname):
         """
+        private method
+        
         Validate the keyname, making sure it is set and not a reserved name.
+
+        Returns the validated keyname.
         """
         if keyname is None:
             raise ValueError(u"You must pass a keyname for the session" + \
@@ -568,17 +690,23 @@ class Session(object):
         Args:
             keyname: The keyname of the mapping.
             value: The value of the mapping.
+
+        Returns the value from the writer put operation, varies based on writer.
         """
         if self.writer == "datastore":
             writer = _DatastoreWriter()
         else:
             writer = _CookieWriter()
 
-        writer.put(keyname, value, self)
+        return writer.put(keyname, value, self)
 
     def _delete_session(self):
         """
+        private method
+        
         Delete the session and all session data.
+
+        Returns True.
         """
         if hasattr(self, u"session"):
             self.session.delete()
@@ -590,6 +718,7 @@ class Session(object):
         # if the event class has been loaded, fire off the sessionDeleted event
         if u"AEU_Events" in __main__.__dict__:
             __main__.AEU_Events.fire_event(u"sessionDelete")
+        return True
 
     def delete(self):
         """
@@ -597,21 +726,25 @@ class Session(object):
 
         This is useful for when you need to get rid of all data tied to a
         current session, such as when you are logging out a user.
+
+        Returns True
         """
         self._delete_session()
 
     @classmethod
     def delete_all_sessions(cls):
         """
-        Deletes all sessions and session data from the data store and memcache:
+        Deletes all sessions and session data from the data store. This
+        does not delete the entities from memcache (yet). Depending on the
+        amount of sessions active in your datastore, this request could
+        timeout before completion and may have to be called multiple times.
 
-        NOTE: This is not fully developed. It also will not delete any cookie
-        data as this does not work for each incoming request. Keep this in mind
-        if you are using the cookie writer.
+        NOTE: This can not delete cookie only sessions as it has no way to
+        access them. It will only delete datastore writer sessions.
+
+        Returns True on completion.
         """
         all_sessions_deleted = False
-        # TODO This is marked as unused
-        # all_data_deleted = False
 
         while not all_sessions_deleted:
             query = _AppEngineUtilities_Session.all()
@@ -621,14 +754,17 @@ class Session(object):
             else:
                 for result in results:
                     result.delete()
+        return True
 
 
     def _clean_old_sessions(self):
         """
-        Delete expired sessions from the datastore.
+        Delete 50 expired sessions from the datastore.
 
         This is only called for CLEAN_CHECK_PERCENT percent of requests because
         it could be rather intensive.
+
+        Returns True on completion
         """
         duration = datetime.timedelta(seconds=self.session_expire_time)
         session_age = datetime.datetime.now() - duration
@@ -637,6 +773,200 @@ class Session(object):
         results = query.fetch(50)
         for result in results:
             result.delete()
+        return True
+
+    def cycle_key(self):
+        """
+        Changes the session id/token.
+
+        Returns new token.
+        """
+        self.sid = self.new_sid()
+        if len(self.session.sid) > 2:
+            self.session.sid.remove(self.session.sid[0])
+        self.session.sid.append(self.sid)
+        
+        return self.sid
+
+    def flush(self):
+        """
+        Delete's the current session, creating a new one.
+
+        Returns True
+        """
+        self._delete_session()
+        self.__init__()
+        return True
+
+    def no_cache_headers(self):
+        """
+        Generates headers to avoid any page caching in the browser.
+        Useful for highly dynamic sites.
+
+        Returns a unicode string of headers.
+        """
+        return u"".join([u"Expires: Tue, 03 Jul 2001 06:00:00 GMT",
+            strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z").decode("utf-8"),
+            u"Cache-Control: no-store, no-cache, must-revalidate, max-age=0",
+            u"Cache-Control: post-check=0, pre-check=0",
+            u"Pragma: no-cache",
+        ])
+
+    def clear(self):
+        """
+        Removes session data items, doesn't delete the session. It does work
+        with cookie sessions, and must be called before any output is sent
+        to the browser, as it set cookies.
+
+        Returns True
+        """
+        sessiondata = self._get()
+        # delete from datastore
+        if sessiondata is not None:
+            for sd in sessiondata:
+                sd.delete()
+        # delete from memcache
+        self.cache = {}
+        self.cookie_vals = {}
+        self.output_cookie[self.cookie_name + "_data"] = \
+            simplejson.dumps(self.cookie_vals)
+        print self.output_cookie.output()
+        return True
+
+    def has_key(self, keyname):
+        """
+        Equivalent to k in a, use that form in new code
+
+        Args:
+            keyname: keyname to check
+
+        Returns True/False
+        """
+        return self.__contains__(keyname)
+
+    def items(self):
+        """
+        Creates a copy of just the data items.
+
+        Returns dictionary of session data objects.
+        """
+        op = {}
+        for k in self:
+            op[k] = self[k]
+        return op
+
+    def keys(self):
+        """
+        Returns a list of keys.
+        """
+        l = []
+        for k in self:
+            l.append(k)
+        return l
+
+    def update(self, *dicts):
+        """
+        Updates with key/value pairs from b, overwriting existing keys
+
+        Returns None
+        """
+        for dict in dicts:
+            for k in dict:
+                self._put(k, dict[k])
+        return None
+
+    def values(self):
+        """
+        Returns a list object of just values in the session.
+        """
+        v = []
+        for k in self:
+            v.append(self[k])
+        return v
+
+    def get(self, keyname, default = None):
+        """
+        Returns either the value for the keyname or a default value
+        passed.
+
+        Args:
+            keyname: keyname to look up
+            default: (optional) value to return on keyname miss
+
+        Returns value of keyname, or default, or None
+        """
+        try:
+            return self.__getitem__(keyname)
+        except KeyError:
+            if default is not None:
+                return default
+            return None
+
+    def setdefault(self, keyname, default = None):
+        """
+        Returns either the value for the keyname or a default value
+        passed. If keyname lookup is a miss, the keyname is set with
+        a value of default.
+
+        Args:
+            keyname: keyname to look up
+            default: (optional) value to return on keyname miss
+
+        Returns value of keyname, or default, or None
+        """
+        try:
+            return self.__getitem__(keyname)
+        except KeyError:
+            if default is not None:
+                self.__setitem__(keyname, default)
+                return default
+            return None
+
+    @classmethod
+    def check_token(cls, cookie_name=COOKIE_NAME, delete_invalid=True):
+        """
+        Retrieves the token from a cookie and validates that it is
+        a valid token for an existing cookie. Cookie validation is based
+        on the token existing on a session that has not expired.
+
+        This is useful for determining if datastore or cookie writer
+        should be used in hybrid implementations.
+
+        Args:
+            cookie_name: Name of the cookie to check for a token.
+            delete_invalid: If the token is not valid, delete the session
+                            cookie, to avoid datastore queries on future
+                            requests.
+
+        Returns True/False
+        """
+
+        string_cookie = os.environ.get(u"HTTP_COOKIE", u"")
+        cookie = Cookie.SimpleCookie()
+        cookie.load(string_cookie)
+        if cookie.has_key(cookie_name):
+            query = _AppEngineUtilities_Session.all()
+            query.filter(u"sid", cookie[cookie_name].value)
+            results = query.fetch(1)
+            if len(results) > 0:
+                return True
+            else:
+                if delete_invalid:
+                    output_cookie = Cookie.SimpleCookie()
+                    output_cookie[cookie_name] = cookie[cookie_name]
+                    output_cookie[cookie_name][u"expires"] = 0
+                    print output_cookie.output()
+        return False
+
+    def get_ds_entity(self):
+        """
+        Will return the session entity from the datastore if one
+        exists, otherwise will return None (as in the case of cookie writer
+        session.
+        """
+        if hasattr(self, u"session"):
+            return self.session
+        return None
 
     # Implement Python container methods
 
@@ -651,14 +981,12 @@ class Session(object):
         if self.integrate_flash and (keyname == u"flash"):
             return self.flash.msg
         if keyname in self.cache:
-            # UNPICKLING CACHE return pickle.loads(unicode(self.cache[keyname]))
             return self.cache[keyname]
         if keyname in self.cookie_vals:
             return self.cookie_vals[keyname]
         if hasattr(self, u"session"):
             data = self._get(keyname)
             if data:
-                #UNPICKLING CACHE self.cache[keyname] = data.content
                 self.cache[keyname] = pickle.loads(data.content)
                 return pickle.loads(data.content)
             else:
@@ -679,7 +1007,6 @@ class Session(object):
         else:
             keyname = self._validate_key(keyname)
             self.cache[keyname] = value
-            # self._set_memcache() # commented out because this is done in the datestore put
             return self._put(keyname, value)
 
     def delete_item(self, keyname, throw_exception=False):
@@ -771,148 +1098,5 @@ class Session(object):
         Return string representation.
         """
 
-        return u'{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
-
-    def cycle_key(self):
-        """
-        Changes the session id.
-        """
-        self.sid = self.new_sid()
-        if len(self.session.sid) > 2:
-            self.session.sid.remove(self.session.sid[0])
-        self.session.sid.append(self.sid)
-
-    def flush(self):
-        """
-        Delete's the current session, creating a new one.
-        """
-        self._delete_session()
-        self.__init__()
-
-    def no_cache_headers(self):
-        """
-        Adds headers, avoiding any page caching in the browser. Useful for highly
-        dynamic sites.
-        """
-        print u"Expires: Tue, 03 Jul 2001 06:00:00 GMT"
-        print strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z").decode("utf-8")
-        print u"Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
-        print u"Cache-Control: post-check=0, pre-check=0"
-        print u"Pragma: no-cache"
-
-    def clear(self):
-        """
-        Remove all items
-        """
-        sessiondata = self._get()
-        # delete from datastore
-        if sessiondata is not None:
-            for sd in sessiondata:
-                sd.delete()
-        # delete from memcache
-        self.cache = {}
-        self.cookie_vals = {}
-        self.output_cookie[self.cookie_name + "_data"] = \
-            simplejson.dumps(self.cookie_vals)
-        print self.output_cookie.output()
-
-    def has_key(self, keyname):
-        """
-        Equivalent to k in a, use that form in new code
-        """
-        return self.__contains__(keyname)
-
-    def items(self):
-        """
-        A copy of list of (key, value) pairs
-        """
-        op = {}
-        for k in self:
-            op[k] = self[k]
-        return op
-
-    def keys(self):
-        """
-        List of keys.
-        """
-        l = []
-        for k in self:
-            l.append(k)
-        return l
-
-    def update(self, *dicts):
-        """
-        Updates with key/value pairs from b, overwriting existing keys, returns None
-        """
-        for dict in dicts:
-            for k in dict:
-                self._put(k, dict[k])
-        return None
-
-    def values(self):
-        """
-        A copy list of values.
-        """
-        v = []
-        for k in self:
-            v.append(self[k])
-        return v
-
-    def get(self, keyname, default = None):
-        """
-        a[k] if k in a, else x
-        """
-        try:
-            return self.__getitem__(keyname)
-        except KeyError:
-            if default is not None:
-                return default
-            return None
-
-    def setdefault(self, keyname, default = None):
-        """
-        a[k] if k in a, else x (also setting it)
-        """
-        try:
-            return self.__getitem__(keyname)
-        except KeyError:
-            if default is not None:
-                self.__setitem__(keyname, default)
-                return default
-            return None
-
-    @classmethod
-    def check_token(cls, cookie_name=COOKIE_NAME, delete_invalid=True):
-        """
-        Retrieves the token from a cookie and validates that it is
-        a valid token for an existing cookie. Cookie validation is based
-        on the token existing on a session that has not expired.
-
-        This is useful for determining if datastore or cookie writer
-        should be used in hybrid implementations.
-
-        Args:
-            cookie_name: Name of the cookie to check for a token.
-            delete_invalid: If the token is not valid, delete the session
-                            cookie, to avoid datastore queries on future
-                            requests.
-
-        Returns True/False
-        """
-
-        string_cookie = os.environ.get(u"HTTP_COOKIE", u"")
-        cookie = Cookie.SimpleCookie()
-        cookie.load(string_cookie)
-        if cookie.has_key(cookie_name):
-            query = _AppEngineUtilities_Session.all()
-            query.filter(u"sid", cookie[cookie_name].value)
-            results = query.fetch(1)
-            if len(results) > 0:
-                return True
-            else:
-                if delete_invalid:
-                    output_cookie = Cookie.SimpleCookie()
-                    output_cookie[cookie_name] = cookie[cookie_name]
-                    output_cookie[cookie_name][u"expires"] = 0
-                    print output_cookie.output()
-        return False
+        return \
+            u'{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
