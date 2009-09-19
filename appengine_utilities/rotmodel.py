@@ -29,6 +29,12 @@ import time
 from google.appengine.api import datastore
 from google.appengine.ext import db
 
+# settings
+try:
+    import settings
+except:
+    import settings_default as settings
+
 class ROTModel(db.Model):
     """
     ROTModel overrides the db.Model functions, retying each method each time
@@ -38,24 +44,24 @@ class ROTModel(db.Model):
     @classmethod
     def get(cls, keys):
         count = 0
-        while count < 3:
+        while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.get(keys)
             except db.Timeout():
                 count += 1
-                time.sleep(count)
+                time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
             raise db.Timeout()
 
     @classmethod
     def get_by_id(cls, ids, parent=None):
         count = 0
-        while count < 3:
+        while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.get_by_id(ids, parent)
             except db.Timeout():
                 count += 1
-                time.sleep(count)
+                time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
             raise db.Timeout()
 
@@ -68,19 +74,19 @@ class ROTModel(db.Model):
                 for name in key_names]
         count = 0
         if multiple:
-            while count < 3:
+            while count < settings.rotmodel["RETRY_ATTEMPTS"]:
                 try:
                     return db.get(keys)
                 except db.Timeout():
                     count += 1
-                    time.sleep(count)
+                    time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
-            while count < 3:
+            while count < settings.rotmodel["RETRY_ATTEMPTS"]:
                 try:
                     return db.get(*keys)
                 except db.Timeout():
                     count += 1
-                    time.sleep(count)
+                    time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
 
     @classmethod
     def get_or_insert(cls, key_name, **kwargs):
@@ -94,23 +100,23 @@ class ROTModel(db.Model):
 
     def put(self):
         count = 0
-        while count < 3:
+        while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.put(self)
             except db.Timeout():
                 count += 1
-                time.sleep(count)
+                time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
             raise db.Timeout()
 
     def delete(self):
         count = 0
-        while count < 3:
+        while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.delete(self)
             except db.Timeout():
                 count += 1
-                time.sleep(count)
+                time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
             raise db.Timeout()
 

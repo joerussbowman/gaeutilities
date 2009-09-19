@@ -66,5 +66,11 @@ flash = {
 paginator = {
     "DEFAULT_COUNT": 10,
 }
+
+rotmodel = {
+    "RETRY_ATTEMPTS": 3,
+    "RETRY_INTERVAL": .2,
+}
 if __name__ == "__main__":
     print "Hello World";
+

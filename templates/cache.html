@@ -1,8 +1,20 @@
 {% extends "base.html" %}
 {% block header-content %}
 <h3>Cache</h3>
-<p>Cache is a caching class built using Big Table as it's storage. Google App Engine doesn't give you any access to storing data directly on a filesystem, so Cache was built to replace that functionality some what. The idea is that you can save CPU cycles and increase application performance by storing pre-generated content and objects in the data store. Like session, cache uses the standard Python methods for container access.
+<p>Cache is used for storing pregenerated output and/or objects in the Big
+    Table datastore to minimize the amount of queries needed for page
+    displays. The idea is that complex queries that generate the same
+    results really should only be run once. Cache can be used to store
+    the values made from queries (or other calls such as
+    urlFetch()), or the query objects themselves.<br />
+    Cache stores data in both memcache and the datastore, preferring to read
+    from memcache. This helps optimize performance, limiting hits to the
+    datastore.
 </p>
+{% endblock %}
+{% block doc %}
+<h3>Documentation</h3>
+
 {% endblock %}
 {% block content %}
     cacheItemStr = {{ cacheItemStr }}<br />
