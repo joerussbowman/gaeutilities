@@ -81,8 +81,8 @@ class _AppEngineUtilities_Session(ROTModel):
         Returns the session object.
         """
         if self.session_key:
-            memcache.set(u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                (unicode(self.session_key)), self)
         else:
             # new session, generate a new key, which will handle the
             # put and set the memcache
@@ -93,12 +93,12 @@ class _AppEngineUtilities_Session(ROTModel):
         try:
             self.dirty = False
             db.put(self)
-            memcache.set(u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                (unicode(self.session_key)), self)
         except:
             self.dirty = True
-            memcache.set(u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key), self)
+            memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                (unicode(self.session_key)), self)
 
         return self
 
@@ -116,8 +116,8 @@ class _AppEngineUtilities_Session(ROTModel):
         if session_obj.sid == None:
             return None
         session_key = session_obj.sid.split(u'_')[0]
-        session = memcache.get(u"_AppEngineUtilities_Session_" + \
-            unicode(session_key))
+        session = memcache.get(u"_AppEngineUtilities_Session_%s" % \
+            (unicode(session_key)))
         if session:
             if session.deleted == True:
                 session.delete()
@@ -127,8 +127,8 @@ class _AppEngineUtilities_Session(ROTModel):
                 # which can happen with ajax oriented sites, don't try to put
                 # at the same time
                 session.working = True
-                memcache.set(u"_AppEngineUtilities_Session_" + \
-                    unicode(session_key), session)
+                memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                    (unicode(session_key)), session)
                 session.put()
             if session_obj.sid in session.sid:
                 sessionAge = datetime.datetime.now() - session.last_activity
@@ -148,10 +148,10 @@ class _AppEngineUtilities_Session(ROTModel):
             if sessionAge.seconds > session_obj.session_expire_time:
                 results[0].delete()
                 return None
-            memcache.set(u"_AppEngineUtilities_Session_" + \
-                unicode(session_key), results[0])
-            memcache.set(u"_AppEngineUtilities_SessionData_" + \
-                unicode(session_key), results[0].get_items_ds())
+            memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                (unicode(session_key)), results[0])
+            memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+                (unicode(session_key)), results[0].get_items_ds())
             return results[0]
         else:
             return None
@@ -161,8 +161,8 @@ class _AppEngineUtilities_Session(ROTModel):
         Returns all the items stored in a session. Queries memcache first
         and will try the datastore next.
         """
-        items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
-            unicode(self.session_key))
+        items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
+            (unicode(self.session_key)))
         if items:
             for item in items:
                 if item.deleted == True:
@@ -184,8 +184,8 @@ class _AppEngineUtilities_Session(ROTModel):
 
         Returns the session data object if it exists, otherwise returns None
         """
-        mc = memcache.get(u"_AppEngineUtilities_SessionData_" + \
-            unicode(self.session_key))
+        mc = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
+            (unicode(self.session_key)))
         if mc:
             for item in mc:
                 if item.keyname == keyname:
@@ -198,8 +198,8 @@ class _AppEngineUtilities_Session(ROTModel):
         query.filter(u"keyname = ", keyname)
         results = query.fetch(1)
         if len(results) > 0:
-            memcache.set(u"_AppEngineUtilities_SessionData_" + \
-                unicode(self.session_key), self.get_items_ds())
+            memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+                (unicode(self.session_key)), self.get_items_ds())
             return results[0]
         return None
 
@@ -228,13 +228,13 @@ class _AppEngineUtilities_Session(ROTModel):
             results = query.fetch(1000)
             db.delete(results)
             db.delete(self)
-            memcache.delete_multi([u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key), \
-                u"_AppEngineUtilities_SessionData_" + \
-                unicode(self.session_key)])
+            memcache.delete_multi([u"_AppEngineUtilities_Session_%s" % \
+                (unicode(self.session_key)), \
+                u"_AppEngineUtilities_SessionData_%s" % \
+                (unicode(self.session_key))])
         except:
-            mc = memcache.get(u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key))
+            mc = memcache.get(u"_AppEngineUtilities_Session_%s" %+ \
+                (unicode(self.session_key)))
             if mc:
                 mc.deleted = True
             else:
@@ -244,8 +244,8 @@ class _AppEngineUtilities_Session(ROTModel):
                 results = query.fetch(1)
                 if len(results) > 0:
                     results[0].deleted = True
-                    memcache.set(u"_AppEngineUtilities_Session_" + \
-                        unicode(session_key), results[0])
+                    memcache.set(u"_AppEngineUtilities_Session_%s" %+ \
+                        (unicode(session_key)), results[0])
         return True
 
     def create_key(self):
@@ -258,8 +258,8 @@ class _AppEngineUtilities_Session(ROTModel):
         valid = False
         while valid == False:
             # verify session_key is unique
-            if memcache.get(u"_AppEngineUtilities_Session_" + \
-                unicode(self.session_key)):
+            if memcache.get(u"_AppEngineUtilities_Session_%s" % \
+                (unicode(self.session_key))):
                 self.session_key = self.session_key + 0.001
             else:
                 query = _AppEngineUtilities_Session.all()
@@ -270,12 +270,12 @@ class _AppEngineUtilities_Session(ROTModel):
                 else:
                     try:
                         self.put()
-                        memcache.set(u"_AppEngineUtilities_Session_" + \
-                            unicode(self.session_key), self)
+                        memcache.set(u"_AppEngineUtilities_Session_%s" %+ \
+                            (unicode(self.session_key)), self)
                     except:
                         self.dirty = True
-                        memcache.set(u"_AppEngineUtilities_Session_" + \
-                            unicode(self.session_key), self)
+                        memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                            (unicode(self.session_key)), self)
                     valid = True
         return unicode(self.session_key)
             
@@ -305,8 +305,8 @@ class _AppEngineUtilities_SessionData(ROTModel):
             self.dirty = True
 
         # update or insert in memcache
-        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
-            unicode(self.session_key))
+        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
+            (unicode(self.session_key)))
         if mc_items:
             value_updated = False
             for item in mc_items:
@@ -314,14 +314,14 @@ class _AppEngineUtilities_SessionData(ROTModel):
                     break
                 if item.keyname == self.keyname:
                     item.content = self.content
-                    memcache.set(u"_AppEngineUtilities_SessionData_" + \
-                        unicode(self.session_key), mc_items)
+                    memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+                        (unicode(self.session_key)), mc_items)
                     value_updated = True
                     break
             if value_updated == False:
                 mc_items.append(self)
-                memcache.set(u"_AppEngineUtilities_SessionData_" + \
-                    unicode(self.session_key), mc_items)
+                memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+                    (unicode(self.session_key)), mc_items)
         return return_val
 
     def delete(self):
@@ -334,8 +334,8 @@ class _AppEngineUtilities_SessionData(ROTModel):
             db.delete(self)
         except:
             self.deleted = True
-        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_" + \
-            unicode(self.session_key))
+        mc_items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
+            (unicode(self.session_key)))
         value_handled = False
         for item in mc_items:
             if value_handled == True:
@@ -345,8 +345,8 @@ class _AppEngineUtilities_SessionData(ROTModel):
                     item.deleted = True
                 else:
                     mc_items.remove(item)
-                memcache.set(u"_AppEngineUtilities_SessionData_" + \
-                    unicode(self.session_key), mc_items)
+                memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+                    (unicode(self.session_key)), mc_items)
         return True
         
 
@@ -371,7 +371,7 @@ class _DatastoreWriter(object):
         # entries.
         if session.cookie_vals.has_key(keyname):
             del(session.cookie_vals[keyname])
-            session.output_cookie[session.cookie_name + "_data"] = \
+            session.output_cookie["%s_data" % (session.cookie_name)] = \
                 simplejson.dumps(session.cookie_vals)
             print session.output_cookie.output()
 
@@ -407,7 +407,7 @@ class _CookieWriter(object):
         session.cache[keyname] = value
         # simplejson will raise any error I'd raise about an invalid value
         # so let it raise exceptions
-        session.output_cookie[session.cookie_name + "_data"] = \
+        session.output_cookie["%s_data" % (session.cookie_name)] = \
             simplejson.dumps(session.cookie_vals)
         print session.output_cookie.output()
         return True
@@ -539,14 +539,14 @@ class Session(object):
         self.cookie.load(string_cookie)
         try:
             self.cookie_vals = \
-                simplejson.loads(self.cookie[self.cookie_name + "_data"].value)
+                simplejson.loads(self.cookie["%s_data" % (self.cookie_name)].value)
                 # sync self.cache and self.cookie_vals which will make those
                 # values available for all gets immediately.
             for k in self.cookie_vals:
                 self.cache[k] = self.cookie_vals[k]
                 # sync the input cookie with the output cookie
-                self.output_cookie[self.cookie_name + "_data"] = \
-                    self.cookie[self.cookie_name + "_data"]
+                self.output_cookie["%s_data" % (self.cookie_name)] = \
+                    self.cookie["%s_data" % (self.cookie_name)]
         except:
             self.cookie_vals = {}
 
@@ -617,9 +617,9 @@ class Session(object):
                     self.session.put()
 
         if self.set_cookie_expires:
-            if not self.output_cookie.has_key(cookie_name + "_data"):
-                self.output_cookie[cookie_name + "_data"] = u""
-            self.output_cookie[cookie_name + "_data"]["expires"] = \
+            if not self.output_cookie.has_key("%s_data" % (cookie_name)):
+                self.output_cookie["%s_data" % (cookie_name)] = u""
+            self.output_cookie["%s_data" % (cookie_name)]["expires"] = \
                 self.session_expire_time
         print self.output_cookie.output()
 
@@ -639,9 +639,13 @@ class Session(object):
 
         Returns session id as a unicode string.
         """
-        sid = unicode(self.session.session_key) + "_" + \
-                hashlib.md5(repr(time.time()) + \
-                unicode(random.random())).hexdigest()
+        sid = u"%s_%s" % (self.session.session_key,
+            hashlib.md5(repr(time.time()) + \
+            unicode(random.random())).hexdigest()
+        )
+        #sid = unicode(self.session.session_key) + "_" + \
+        #        hashlib.md5(repr(time.time()) + \
+        #        unicode(random.random())).hexdigest()
         return sid
 
     def _get(self, keyname=None):
@@ -674,10 +678,11 @@ class Session(object):
         Returns the validated keyname.
         """
         if keyname is None:
-            raise ValueError(u"You must pass a keyname for the session" + \
-                u" data content.")
+            raise ValueError(
+                u"You must pass a keyname for the session data content."
+            )
         elif keyname in (u"sid", u"flash"):
-            raise ValueError(keyname + u" is a reserved keyname.")
+            raise ValueError(u"%s is a reserved keyname." % keyname)
 
         if type(keyname) != type([str, unicode]):
             return unicode(keyname)
@@ -712,7 +717,7 @@ class Session(object):
             self.session.delete()
         self.cookie_vals = {}
         self.cache = {}
-        self.output_cookie[self.cookie_name + "_data"] = \
+        self.output_cookie["%s_data" % (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
         # if the event class has been loaded, fire off the sessionDeleted event
@@ -828,7 +833,7 @@ class Session(object):
         # delete from memcache
         self.cache = {}
         self.cookie_vals = {}
-        self.output_cookie[self.cookie_name + "_data"] = \
+        self.output_cookie["%s_data" %s (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
         return True
@@ -1045,7 +1050,7 @@ class Session(object):
         if keyname in self.cookie_vals:
             del self.cookie_vals[keyname]
             bad_key = False
-            self.output_cookie[self.cookie_name + "_data"] = \
+            self.output_cookie["%s_data" % (self.cookie_name)] = \
                 simplejson.dumps(self.cookie_vals)
             print self.output_cookie.output()
         if bad_key:
@@ -1074,8 +1079,7 @@ class Session(object):
             keyname: The keyname being searched.
         """
         try:
-            # TODO: Does the r variable need to be instantiated
-            r = self.__getitem__(keyname)
+            self.__getitem__(keyname)
         except KeyError:
             return False
         return True
@@ -1097,6 +1101,4 @@ class Session(object):
         """
         Return string representation.
         """
-
-        return \
-            u'{' + ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self]) + '}'
+        return u"{%s}" % ', '.join(['"%s" = "%s"' % (k, self[k]) for k in self])
