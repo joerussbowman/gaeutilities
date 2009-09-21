@@ -265,7 +265,7 @@ class Cache(object):
 
         Returns True.
         """
-        memcache.delete('cache-%' % (key))
+        memcache.delete('cache-%s' % (key))
         result = self._read(key)
         if result:
             if 'AEU_Events' in __main__.__dict__:
