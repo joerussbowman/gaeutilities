@@ -157,3 +157,18 @@ For example to log in a user you'd want to do something like this:
 1.2.3
  - added settings_default.py, can be copied to settings.py and modified to set
    default settings for your application.
+
+1.3rc1
+    - rotmodel - upgraded to fully extend db.Model, retrying on various get/set
+                 datastore operations.
+    - sessions - Major rewrite of sessions, that should be 100% backwards
+                 compatible. Session not only uses rotmodel for gets, but
+                 has it's own wrapper for puts, that will keep state in
+                 memcache past failed datastore writes, and self correct
+                 on future requests.
+    - paginator - introduced a new paginator class, that of this version still
+                 requests a lot of testing. Use at your own risk, will be
+                 finalized by release 1.3
+    - all -      Lots of documenation updates and various other tweaks to
+                 optimize performance. Site documenation updates will be final
+                 for release 1.3
