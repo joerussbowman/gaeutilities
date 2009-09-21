@@ -188,7 +188,7 @@ class Cache(object):
             pass
 
         memcache_timeout = timeout - datetime.datetime.now()
-        memcache.set('cache-'+key, value, int(memcache_timeout.seconds))
+        memcache.set('cache-%s' % (key), value, int(memcache_timeout.seconds))
 
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheAdded')
@@ -224,7 +224,7 @@ class Cache(object):
             pass
 
         memcache_timeout = timeout - datetime.datetime.now()
-        memcache.set('cache-'+key, value, int(memcache_timeout.seconds))
+        memcache.set('cache-%s' % (key), value, int(memcache_timeout.seconds))
 
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheSet')
@@ -265,7 +265,7 @@ class Cache(object):
 
         Returns True.
         """
-        memcache.delete('cache-'+key)
+        memcache.delete('cache-%' % (key))
         result = self._read(key)
         if result:
             if 'AEU_Events' in __main__.__dict__:
@@ -282,7 +282,7 @@ class Cache(object):
 
         Returns the value of the cache item.
         """
-        mc = memcache.get('cache-'+key)
+        mc = memcache.get('cache-%s' % (key))
         if mc:
             if 'AEU_Events' in __main__.__dict__:
                 __main__.AEU_Events.fire_event('cacheReadFromMemcache')
@@ -292,7 +292,7 @@ class Cache(object):
         result = self._read(key)
         if result:
             timeout = result.timeout - datetime.datetime.now()
-            memcache.set('cache-'+key, pickle.loads(result.value),
+            memcache.set('cache-%s' % (key), pickle.loads(result.value),
                int(timeout.seconds))
             if 'AEU_Events' in __main__.__dict__:
                 __main__.AEU_Events.fire_event('cacheRead')
