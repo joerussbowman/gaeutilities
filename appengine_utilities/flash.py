@@ -26,14 +26,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
-import sys
 import Cookie
-import pickle
 from time import strftime
 
 from django.utils import simplejson
 
-COOKIE_NAME = 'appengine-utilities-flash'
+# settings
+try:
+    import settings
+except:
+    import settings_default as settings
+
+COOKIE_NAME = settings.flash["COOKIE_NAME"]
 
 
 class Flash(object):
@@ -64,7 +68,7 @@ class Flash(object):
         """
         Load the flash message and clear the cookie.
         """
-        self.no_cache_headers()
+        print self.no_cache_headers()
        # load cookie
         if cookie is None:
             browser_cookie = os.environ.get('HTTP_COOKIE', '')
@@ -109,11 +113,14 @@ class Flash(object):
 
     def no_cache_headers(self):
         """
-        Adds headers, avoiding any page caching in the browser. Useful for highly
-        dynamic sites.
+        Generates headers to avoid any page caching in the browser.
+        Useful for highly dynamic sites.
+
+        Returns a unicode string of headers.
         """
-        print "Expires: Tue, 03 Jul 2001 06:00:00 GMT"
-        print strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z")
-        print "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"
-        print "Cache-Control: post-check=0, pre-check=0"
-        print "Pragma: no-cache"
+        return u"".join([u"Expires: Tue, 03 Jul 2001 06:00:00 GMT",
+            strftime("Last-Modified: %a, %d %b %y %H:%M:%S %Z").decode("utf-8"),
+            u"Cache-Control: no-store, no-cache, must-revalidate, max-age=0",
+            u"Cache-Control: post-check=0, pre-check=0",
+            u"Pragma: no-cache",
+        ])

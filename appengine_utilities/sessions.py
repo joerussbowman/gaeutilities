@@ -41,7 +41,6 @@ from time import strftime
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
-#django simplejson import, used for flash
 from django.utils import simplejson
 
 # appengine_utilities import
