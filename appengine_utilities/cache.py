@@ -87,23 +87,59 @@ class Cache(object):
         _clean_cache is a routine that is run to find and delete cache
         items that are old. This helps keep the size of your over all
         datastore down.
+
+        It only deletes the max_hits_to_clean per attempt, in order
+        to maximize performance. Default settings are 20 hits, 50%
+        of requests. Generally less hits cleaned on more requests will
+        give you better performance.
+
+        Returns True on completion
         """
         query = _AppEngineUtilities_Cache.all()
         query.filter('timeout < ', datetime.datetime.now())
         results = query.fetch(self.max_hits_to_clean)
         db.delete(results)
-        #for result in results:
-        #    result.delete()
+
+        return True
 
     def _validate_key(self, key):
+        """
+        Internal method for key validation. This can be used by a superclass
+        to introduce more checks on key names.
+        
+        Args:
+            key: Key name to check
+
+        Returns True is key is valid, otherwise raises KeyError.
+        """
         if key == None:
             raise KeyError
+        return True
 
     def _validate_value(self, value):
+        """
+        Internal method for value validation. This can be used by a superclass
+        to introduce more checks on key names.
+
+        Args:
+            value: value to check
+
+        Returns True is value is valid, otherwise raises ValueError.
+        """
         if value == None:
             raise ValueError
+        return True
 
     def _validate_timeout(self, timeout):
+        """
+        Internal method to validate timeouts. If no timeout
+        is passed, then the default_timeout is used.
+
+        Args:
+            timeout: datetime.datetime format
+
+        Returns the timeout
+        """
         if timeout == None:
             timeout = datetime.datetime.now() +\
             datetime.timedelta(seconds=self.default_timeout)
@@ -119,8 +155,15 @@ class Cache(object):
 
     def add(self, key = None, value = None, timeout = None):
         """
-        add adds an entry to the cache, if one does not already
-        exist.
+        Adds an entry to the cache, if one does not already exist. If they key
+        already exists, KeyError will be raised.
+
+        Args:
+            key: Key name of the cache object
+            value: Value of the cache object
+            timeout: timeout value for the cache object.
+
+        Returns the cache object.
         """
         self._validate_key(key)
         self._validate_value(value)
@@ -150,10 +193,19 @@ class Cache(object):
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheAdded')
 
+        return self.get(key)
+
     def set(self, key = None, value = None, timeout = None):
         """
-        add adds an entry to the cache, overwriting an existing value
+        Sets an entry to the cache, overwriting an existing value
         if one already exists.
+
+        Args:
+            key: Key name of the cache object
+            value: Value of the cache object
+            timeout: timeout value for the cache object.
+
+        Returns the cache object.
         """
         self._validate_key(key)
         self._validate_value(value)
@@ -177,13 +229,18 @@ class Cache(object):
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheSet')
 
+        return self.get(key)
+
     def _read(self, key = None):
         """
-        _read returns a cache object determined by the key. It's set
-        to private because it returns a db.Model object, and also
-        does not handle the unpickling of objects making it not the
-        best candidate for use. The special method __getitem__ is the
-        preferred access method for cache data.
+        _read is an internal method that will get the cache entry directly
+        from the datastore, and return the entity. This is used for datastore
+        maintenance within the class.
+
+        Args:
+            key: The key to retrieve
+
+        Returns the cache entity
         """
         query = _AppEngineUtilities_Cache.all()
         query.filter('cachekey', key)
@@ -191,16 +248,22 @@ class Cache(object):
         results = query.fetch(1)
         if len(results) is 0:
             return None
-        return results[0]
 
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheReadFromDatastore')
         if 'AEU_Events' in __main__.__dict__:
             __main__.AEU_Events.fire_event('cacheRead')
 
+        return results[0]
+
     def delete(self, key = None):
         """
-        Deletes a cache object determined by the key.
+        Deletes a cache object.
+
+        Args:
+            key: The key of the cache object to delete.
+
+        Returns True.
         """
         memcache.delete('cache-'+key)
         result = self._read(key)
@@ -208,10 +271,16 @@ class Cache(object):
             if 'AEU_Events' in __main__.__dict__:
                 __main__.AEU_Events.fire_event('cacheDeleted')
             result.delete()
+        return True
 
     def get(self, key):
         """
-        get is used to return the cache value associated with the key passed.
+        Used to return the cache value associated with the key passed.
+
+        Args:
+            key: The key of the value to retrieve.
+
+        Returns the value of the cache item.
         """
         mc = memcache.get('cache-'+key)
         if mc:
@@ -223,9 +292,10 @@ class Cache(object):
         result = self._read(key)
         if result:
             timeout = result.timeout - datetime.datetime.now()
-            # print timeout.seconds
             memcache.set('cache-'+key, pickle.loads(result.value),
                int(timeout.seconds))
+            if 'AEU_Events' in __main__.__dict__:
+                __main__.AEU_Events.fire_event('cacheRead')
             return pickle.loads(result.value)
         else:
             raise KeyError
@@ -234,6 +304,11 @@ class Cache(object):
         """
         Returns a dict mapping each key in keys to its value. If the given
         key is missing, it will be missing from the response dict.
+
+        Args:
+            keys: A list of keys to retrieve.
+
+        Returns a dictionary of key/value pairs.
         """
         dict = {}
         for key in keys:
@@ -265,7 +340,7 @@ class Cache(object):
         Implements "in" operator
         """
         try:
-            r = self.__getitem__(key)
+            self.__getitem__(key)
         except KeyError:
             return False
         return True
