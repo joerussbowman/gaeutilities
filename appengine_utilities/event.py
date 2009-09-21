@@ -29,9 +29,27 @@ import __main__
 
 class Event(object):
     """
-    Event is a simple publish/subscribe based event dispatcher
-    It sets itself to the __main__    function. In order to use it,
-    you must import it and __main__
+    Event is a simple publish/subscribe based event dispatcher. It's a way
+    to add, or take advantage of, hooks in your application. If you want to
+    tie actions in with lower level classes you're developing within your
+    application, you can set events to fire, and then subscribe to them with
+    callback methods in other methods in your application.
+
+    It sets itself to the __main__ function. In order to use it,
+    you must import it with your __main__ method, and make sure
+    you import __main__ and it's accessible for the methods where
+    you want to use it.
+
+    For example, from sessions.py
+
+            # if the event class has been loaded, fire off the sessionDeleted event
+        if u"AEU_Events" in __main__.__dict__:
+            __main__.AEU_Events.fire_event(u"sessionDelete")
+
+    You can the subscribe to session delete events, adding a callback
+
+        if u"AEU_Events" in __main__.__dict__:
+            __main__.AEU_Events.subscribe(u"sessionDelete", clear_user_session)
     """
 
     def __init__(self):
@@ -40,25 +58,47 @@ class Event(object):
     def subscribe(self, event, callback, args = None):
         """
         This method will subscribe a callback function to an event name.
+
+        Args:
+            event: The event to subscribe to.
+            callback: The callback method to run.
+            args: Optional arguments to pass with the callback.
+
+        Returns True
         """
         if not {"event": event, "callback": callback, "args": args, } \
             in self.events:
             self.events.append({"event": event, "callback": callback, \
                 "args": args, })
+        return True
 
     def unsubscribe(self, event, callback, args = None):
         """
         This method will unsubscribe a callback from an event.
+
+        Args:
+            event: The event to subscribe to.
+            callback: The callback method to run.
+            args: Optional arguments to pass with the callback.
+
+        Returns True
         """
         if {"event": event, "callback": callback, "args": args, }\
             in self.events:
             self.events.remove({"event": event, "callback": callback,\
                 "args": args, })
 
+        return True
+
     def fire_event(self, event = None):
         """
         This method is what a method uses to fire an event,
         initiating all registered callbacks
+
+        Args:
+            event: The name of the event to fire.
+
+        Returns True
         """
         for e in self.events:
             if e["event"] == event:
@@ -70,6 +110,7 @@ class Event(object):
                     e["callback"]()
                 else:
                     e["callback"](e["args"])
+        return True
 """
 Assign to the event class to __main__
 """
