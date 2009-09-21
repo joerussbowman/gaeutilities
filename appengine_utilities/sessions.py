@@ -713,6 +713,9 @@ class Session(object):
 
         Returns True.
         """
+        # if the event class has been loaded, fire off the preSessionDelete event
+        if u"AEU_Events" in __main__.__dict__:
+            __main__.AEU_Events.fire_event(u"preSessionDelete")
         if hasattr(self, u"session"):
             self.session.delete()
         self.cookie_vals = {}
@@ -720,7 +723,7 @@ class Session(object):
         self.output_cookie["%s_data" % (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
-        # if the event class has been loaded, fire off the sessionDeleted event
+        # if the event class has been loaded, fire off the sessionDelete event
         if u"AEU_Events" in __main__.__dict__:
             __main__.AEU_Events.fire_event(u"sessionDelete")
         return True
