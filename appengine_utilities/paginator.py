@@ -25,7 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from google.appengine.ext import db
 from cache import Cache
 
 try:
@@ -35,12 +34,16 @@ except:
 
 class Paginator(object):
     """
-    This class is used for maintaining pagination objects.
+    This class is used for maintaining pagination objects. It currently
+    only supports one method, get(). It manages pagination by key names
+    of the objects, using __key__. It would need to be wrapped for a more
+    number specific system.
     """
 
     @classmethod
-    def get(cls, count=settings.paginator["DEFAULT_COUNT"], q_filters={}, search=None, start=None, model=None, \
-            order='ASC', order_by='__key__'):
+    def get(cls, count=settings.paginator["DEFAULT_COUNT"], q_filters={},
+            search=None, start=None, model=None, order='ASC',
+            order_by='__key__'):
         """
         get queries the database on model, starting with key, ordered by
         order. It receives count + 1 items, returning count and setting a
