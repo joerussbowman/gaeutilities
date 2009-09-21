@@ -37,8 +37,15 @@ except:
 
 class ROTModel(db.Model):
     """
-    ROTModel overrides the db.Model functions, retying each method each time
+    ROTModel overrides the db.Model functions, retrying each method each time
     a timeout exception is raised.
+
+    Methods superclassed from db.Model are:
+        get(cls, keys)
+        get_by_id(cls, ids, parent)
+        get_by_key_name(cls, key_names, parent)
+        get_or_insert(cls, key_name, kwargs)
+        put(self)
     """
 
     @classmethod
