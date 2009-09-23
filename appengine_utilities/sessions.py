@@ -35,6 +35,7 @@ import hashlib
 import Cookie
 import pickle
 import __main__
+import logging
 from time import strftime
 
 # google appengine imports
@@ -286,6 +287,7 @@ class _AppEngineUtilities_SessionData(ROTModel):
     session_key = db.FloatProperty()
     keyname = db.StringProperty()
     content = db.BlobProperty()
+    model = db.TextProperty()
     dirty = db.BooleanProperty(default=False)
     deleted = db.BooleanProperty(default=False)
 
@@ -361,6 +363,7 @@ class _DatastoreWriter(object):
 
         Returns the model entity key
         """
+        logging.error("DOING A PUT")
         keyname = session._validate_key(keyname)
         if value is None:
             raise ValueError(u"You must pass a value to put.")
@@ -379,8 +382,16 @@ class _DatastoreWriter(object):
             sessdata = _AppEngineUtilities_SessionData()
             sessdata.session_key = session.session.session_key
             sessdata.keyname = keyname
-        sessdata.content = pickle.dumps(value)
-
+        try:
+            sessdata.model = db.model_to_protobuf(value)
+            logging.error("PB")
+            logging.error(sessdata.content)
+        except Exception, e:
+            sessdata.content = pickle.dumps(value)
+            logging.error("PICKLE")
+            logging.error(e)
+            logging.error(sessdata.content)
+            
         session.cache[keyname] = value
         return sessdata.put()
 
@@ -994,8 +1005,12 @@ class Session(object):
         if hasattr(self, u"session"):
             data = self._get(keyname)
             if data:
-                self.cache[keyname] = pickle.loads(data.content)
-                return pickle.loads(data.content)
+                try:
+                    self.cache[keyname] = db.model_from_protobuf(data.model)
+                    return self.cache[keyname]
+                except:
+                    self.cache[keyname] = pickle.loads(data.content)
+                    return self.cache[keyname]
             else:
                 raise KeyError(unicode(keyname))
         raise KeyError(unicode(keyname))
