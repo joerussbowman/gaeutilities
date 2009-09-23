@@ -1004,21 +1004,19 @@ class Session(object):
         if hasattr(self, u"session"):
             data = self._get(keyname)
             if data:
-                if data.model != None:
-                    return data.model
-                else:
-                    self.cache[keyname] = pickle.loads(data.content)
-                    return self.cache[keyname]
+                # TODO: It's broke here, but I'm not sure why, it's
+                # returning a model object, but I can't seem to modify
+                # it.
+                try:
+                    if data.model != None:
+                        self.cache[keyname] = data.model
+                        return self.cache[keyname]
+                    else:
+                        self.cache[keyname] = pickle.loads(data.content)
+                        return self.cache[keyname]
+                except:
+                    self.delete_item(keyname)
 
-                #try:
-                #    self.cache[keyname] = data.model
-                #    return self.cache[keyname]
-                #except Exception, e:
-                #    if data.content != None:
-                #        self.cache[keyname] = pickle.loads(data.content)
-                #        return self.cache[keyname]
-                #    else:
-                #        return None
             else:
                 raise KeyError(unicode(keyname))
         raise KeyError(unicode(keyname))
