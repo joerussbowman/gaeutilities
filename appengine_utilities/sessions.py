@@ -287,7 +287,7 @@ class _AppEngineUtilities_SessionData(ROTModel):
     session_key = db.FloatProperty()
     keyname = db.StringProperty()
     content = db.BlobProperty()
-    model = db.TextProperty()
+    model = db.ReferenceProperty()
     dirty = db.BooleanProperty(default=False)
     deleted = db.BooleanProperty(default=False)
 
@@ -315,6 +315,7 @@ class _AppEngineUtilities_SessionData(ROTModel):
                     break
                 if item.keyname == self.keyname:
                     item.content = self.content
+                    item.model = self.model
                     memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
                         (unicode(self.session_key)), mc_items)
                     value_updated = True
@@ -363,7 +364,6 @@ class _DatastoreWriter(object):
 
         Returns the model entity key
         """
-        logging.error("DOING A PUT")
         keyname = session._validate_key(keyname)
         if value is None:
             raise ValueError(u"You must pass a value to put.")
@@ -383,14 +383,13 @@ class _DatastoreWriter(object):
             sessdata.session_key = session.session.session_key
             sessdata.keyname = keyname
         try:
-            sessdata.model = db.model_to_protobuf(value)
-            logging.error("PB")
-            logging.error(sessdata.content)
+            db.model_to_protobuf(value)
+            if not value.is_saved():
+                value.put()
+            sessdata.model = value
         except Exception, e:
             sessdata.content = pickle.dumps(value)
-            logging.error("PICKLE")
-            logging.error(e)
-            logging.error(sessdata.content)
+            sessdata.model = None
             
         session.cache[keyname] = value
         return sessdata.put()
@@ -1005,12 +1004,21 @@ class Session(object):
         if hasattr(self, u"session"):
             data = self._get(keyname)
             if data:
-                try:
-                    self.cache[keyname] = db.model_from_protobuf(data.model)
-                    return self.cache[keyname]
-                except:
+                if data.model != None:
+                    return data.model
+                else:
                     self.cache[keyname] = pickle.loads(data.content)
                     return self.cache[keyname]
+
+                #try:
+                #    self.cache[keyname] = data.model
+                #    return self.cache[keyname]
+                #except Exception, e:
+                #    if data.content != None:
+                #        self.cache[keyname] = pickle.loads(data.content)
+                #        return self.cache[keyname]
+                #    else:
+                #        return None
             else:
                 raise KeyError(unicode(keyname))
         raise KeyError(unicode(keyname))
