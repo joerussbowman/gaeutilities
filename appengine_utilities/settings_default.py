@@ -65,6 +65,8 @@ flash = {
 # Configuration settings for the paginator class
 paginator = {
     "DEFAULT_COUNT": 10,
+    "CACHE": 10,
+    "DEFAULT_SORT_ORDER": "ASC",
 }
 
 rotmodel = {
