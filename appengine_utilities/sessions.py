@@ -35,7 +35,6 @@ import hashlib
 import Cookie
 import pickle
 import __main__
-import logging
 from time import strftime
 
 # google appengine imports
@@ -244,8 +243,8 @@ class _AppEngineUtilities_Session(ROTModel):
                 results = query.fetch(1)
                 if len(results) > 0:
                     results[0].deleted = True
-                    memcache.set(u"_AppEngineUtilities_Session_%s" %+ \
-                        (unicode(session_key)), results[0])
+                    memcache.set(u"_AppEngineUtilities_Session_%s" % \
+                        (unicode(self.session_key)), results[0])
         return True
 
     def create_key(self):
@@ -387,7 +386,7 @@ class _DatastoreWriter(object):
             if not value.is_saved():
                 value.put()
             sessdata.model = value
-        except Exception, e:
+        except:
             sessdata.content = pickle.dumps(value)
             sessdata.model = None
             
