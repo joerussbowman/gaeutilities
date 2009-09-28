@@ -1,20 +1,22 @@
-{% extends "base.html" %}
+{% extends "base-new.html" %}
 {% block header-content %}
-<h3>Cache</h3>
-<p>Cache is used for storing pregenerated output and/or objects in the Big
+<h2>Cache</h2>
+<div>
+    <p>
+    Cache is used for storing pregenerated output and/or objects in the Big
     Table datastore to minimize the amount of queries needed for page
     displays. The idea is that complex queries that generate the same
     results really should only be run once. Cache can be used to store
-    the values made from queries (or other calls such as
-    urlFetch()), or the query objects themselves.<br />
-    Cache stores data in both memcache and the datastore, preferring to read
-    from memcache. This helps optimize performance, limiting hits to the
-    datastore.
-</p>
-{% endblock %}
-{% block doc %}
-<h3>Documentation</h3>
-
+    pregenerated value made from queries (or other calls such as
+    urlFetch()), or the query objects themselves.
+    </p>
+    <p>
+    Cache is a standard dictionary object and can be used as such. It attempts
+    to store data in both memcache, and the datastore. However, should a
+    datastore write fail, it will not try again. This is for performance
+    reasons.
+    </p>
+</div>
 {% endblock %}
 {% block content %}
     cacheItemStr = {{ cacheItemStr }}<br />
@@ -23,7 +25,7 @@
     {{ memcacheStats }}
 <div class="code">
 <h2>webapp class</h2>
-<pre>{% filter escape %}class CachePage(webapp.RequestHandler):
+<pre class="sh_python">{% filter escape %}class CachePage(webapp.RequestHandler):
   def get(self):
     self.cache = cache.Cache()
     # test deleting a cache object
@@ -43,13 +45,6 @@
     path = os.path.join(os.path.dirname(__file__), 'templates/cache.html')
     self.response.out.write(template.render(path, template_values))
 
-{% endfilter %}</pre>
-</div>
-<div class="code">
-<h2>template</h2>
-<pre>{% filter escape %}
-    cacheItemStr = {% templatetag openvariable %} cacheItemStr {% templatetag closevariable %}<br />
-    cacheItemObj = {% templatetag openvariable %} cacheItemObj.0 {% templatetag closevariable %}<br />
 {% endfilter %}</pre>
 </div>
 {% endblock %}

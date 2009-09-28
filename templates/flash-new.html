@@ -1,0 +1,55 @@
+{% extends "base-new.html" %}
+{% block header-content %}
+<h2>Flash</h2>
+<div>
+    <p>
+    Send messages to the user between pages.
+    </p>
+    <p>
+    When you instantiate the class, the attribute 'msg' will be set from the
+    cookie, and the cookie will be deleted. If there is no flash cookie, 'msg'
+    will default to None.
+    </p>
+    <p>
+    To set a flash message for the next page, simply set the 'msg' attribute.
+    </p>
+    <p>
+    Example psuedocode:
+    <pre class="sh_python">
+        if new_entity.put():
+            flash = Flash()
+            flash.msg = 'Your new entity has been created!'
+            return redirect_to_entity_list()
+    </pre>
+    Then in the template on the next page:
+    <pre>{% filter escape %}
+        {% templatetag openblock %} if flash.msg  {% templatetag closeblock %}
+            <div class="flash-msg">{% templatetag openvariable %} flash.msg {% templatetag closevariable %}</div>
+        {% templatetag openblock %} endif  {% templatetag closeblock %}
+    {% endfilter %}</pre>
+    </p>
+</div>
+{% endblock %}
+{% block content %}
+    {% if flash.msg %}
+    <p>{{ flash.msg }}</p>
+    {% endif %}
+    <p> Welcome to the flash demo. You can <a href="/flash?setflash=true">Set flash data</a>.</p>
+<div class="code">
+<h2>webapp class</h2>
+<pre class="sh_python">{% filter escape %}class FlashPage(webapp.RequestHandler):
+  def get(self):
+    self.flash = flash.Flash()
+    if self.request.get('setflash') == "true":
+        self.flash.msg = 'You set a flash message! <a href="/flash">Refresh this page</a> and this message is gone!'
+        print "Location: /flash\n\n"
+    else:
+        template_values = {
+            'flash': self.flash,
+        }
+        path = os.path.join(os.path.dirname(__file__), 'templates/flash.html')
+        self.response.out.write(template.render(path, template_values))
+
+{% endfilter %}</pre>
+</div>
+{% endblock %}

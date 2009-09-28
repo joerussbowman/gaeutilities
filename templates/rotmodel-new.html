@@ -1,29 +1,84 @@
-{% extends "base.html" %}
+{% extends "base-new.html" %}
 {% block header-content %}
-<h3>Cache</h3>
-<p>ROTModel is a wrapper for db.Model which will retry all operations when it encounters a timeout.
-</p>
+<h2>ROTModel</h2>
+<div>
+    <p>
+        ROTModel overrides the db.Model functions, retrying each method each time
+    a timeout exception is raised.
+    </p>
+
+    <p>
+    Methods superclassed from db.Model are:
+        <ul>
+            <li>get(cls, keys)</li>
+            <li>get(cls, keys)</li>
+            <li>get_by_id(cls, ids, parent)</li>
+            <li>get_by_key_name(cls, key_names, parent)</li>
+            <li>get_or_insert(cls, key_name, kwargs)</li>
+            <li>put(self)</li>
+        </ul>
+    </p>
+</div>
 {% endblock %}
 {% block content %}
-<p>    modelcreate: {{ modelcreate }}</p>
-<p>    puttest: {{ puttest }}</p>
-<p>    savedtest1: {{ savedtest1 }}</p>
-<p>    savedtest2: {{ savedtest2 }}</p>
-<p>    get_or_insert: {{ get_or_insert }}</p>
-<p>    singleget: {{ singleget }}</p>
-<p>    multiget: {{ multiget }}</p>
-<p>    keytest: {{ keytest }}</p>
-<p>    getbykeynamesingle: {{ getbykeynamesingle }}</p>
-<p>    getbykeynamemulti: {{ getbykeynamemulti }}</p>
-<p>    alltest: {{ alltest }}</p>
-<p>    gqltest: {{ gqltest }}</p>
-<p>    parenttest: {{ parenttest }}</p>
-<p>    parentkeytest: {{ parentkeytest }}</p>
-<p>    deletetest: {{ deletetest }}</p>
-
+<table>
+    <tr>
+        <th colspan="2">
+            Unit Tests
+        </th>
+    </tr>
+    <tr>
+        <td>modelcreate</td><td>{{ modelcreate }}</td>
+    </tr>
+    <tr>
+        <td>puttest</td><td>{{ puttest }}</td>
+    </tr>
+    <tr>
+        <td>savedtest1</td><td>{{ savedtest1 }}</td>
+    </tr>
+    <tr>
+        <td>savedtest2</td><td>{{ savedtest2 }}</td>
+    </tr>
+    <tr>
+        <td>get_or_insert</td><td>{{ get_or_insert }}</td>
+    </tr>
+    <tr>
+        <td>singleget</td><td>{{ singleget }}</td>
+    </tr>
+    <tr>
+        <td>multiget</td><td>{{ multiget }}</td>
+    </tr>
+    <tr>
+        <td>keytest</td><td>{{ keytest }}</td>
+    </tr>
+    <tr>
+        <td>getbykeynamesingle</td><td>{{ getbykeynamesingle }}</td>
+    </tr>
+    <tr>
+        <td>getbykeynamemulti</td><td>{{ getbykeynamemulti }}</td>
+    </tr>
+    <tr>
+        <td>alltest</td><td>{{ alltest }}</td>
+    </tr>
+    <tr>
+        <td>gqltest</td><td>{{ gqltest }}</td>
+    </tr>
+    <tr>
+        <td>parenttest</td><td>{{ parenttest }}</td>
+    </tr>
+    <tr>
+        <td>parentkeytest</td><td>{{ parentkeytest }}</td>
+    </tr>
+    <tr>
+        <td>deletetest</td><td>{{ deletetest }}</td>
+    </tr>
+</table>
 <div class="code">
 <h2>webapp class</h2>
-<pre>{% filter escape %}class ROTModelPage(webapp.RequestHandler):
+<pre class="sh_python">{% filter escape %}class TestROTModel(ROTModel):
+    testval = db.IntegerProperty()
+
+class ROTModelPage(webapp.RequestHandler):
   def get(self):
       template_values = {}
 
@@ -143,26 +198,6 @@
       path = os.path.join(os.path.dirname(__file__), 'templates/rotmodel.html')
       self.response.out.write(template.render(path, template_values))
 
-{% endfilter %}</pre>
-</div>
-<div class="code">
-<h2>template</h2>
-<pre>{% filter escape %}
-<p>    modelcreate: {% templatetag openvariable %} modelcreate {% templatetag closevariable %}</p>
-<p>    puttest: {% templatetag openvariable %} puttest {% templatetag closevariable %}</p>
-<p>    savedtest1: {% templatetag openvariable %} savedtest1 {% templatetag closevariable %}</p>
-<p>    savedtest2: {% templatetag openvariable %} savedtest2 {% templatetag closevariable %}</p>
-<p>    get_or_insert: {% templatetag openvariable %} get_or_insert {% templatetag closevariable %}</p>
-<p>    singleget: {% templatetag openvariable %} singleget {% templatetag closevariable %}</p>
-<p>    multiget: {% templatetag openvariable %} multiget {% templatetag closevariable %}</p>
-<p>    keytest: {% templatetag openvariable %} keytest {% templatetag closevariable %}</p>
-<p>    getbykeynamesingle: {% templatetag openvariable %} getbykeynamesingle {% templatetag closevariable %}</p>
-<p>    getbykeynamemulti: {% templatetag openvariable %} getbykeynamemulti {% templatetag closevariable %}</p>
-<p>    alltest: {% templatetag openvariable %} alltest {% templatetag closevariable %}</p>
-<p>    gqltest: {% templatetag openvariable %} gqltest {% templatetag closevariable %}</p>
-<p>    parenttest: {% templatetag openvariable %} parenttest {% templatetag closevariable %}</p>
-<p>    parentkeytest: {% templatetag openvariable %} parentkeytest {% templatetag closevariable %}</p>
-<p>    deletetest: {% templatetag openvariable %} deletetest {% templatetag closevariable %}</p>
 {% endfilter %}</pre>
 </div>
 {% endblock %}

@@ -43,7 +43,6 @@ except:
     import settings_default as settings
     
 class _AppEngineUtilities_Cache(db.Model):
-    # It's up to the application to determine the format of their keys
     cachekey = db.StringProperty()
     createTime = db.DateTimeProperty(auto_now_add=True)
     timeout = db.DateTimeProperty()
@@ -58,6 +57,11 @@ class Cache(object):
     results really should only be run once. Cache can be used to store
     pregenerated value made from queries (or other calls such as
     urlFetch()), or the query objects themselves.
+
+    Cache is a standard dictionary object and can be used as such. It attesmpts
+    to store data in both memcache, and the datastore. However, should a
+    datastore write fail, it will not try again. This is for performance
+    reasons.
     """
 
     def __init__(self, clean_check_percent = settings.cache["CLEAN_CHECK_PERCENT"],

@@ -1,0 +1,196 @@
+{% extends "base-new.html" %}
+{% block header-content %}
+<h2>Session</h2>
+<div>
+    <p>
+    Sessions are used to maintain user presence between requests.
+    </p>
+    <p>
+    Sessions can either be stored server side in the datastore/memcache, or
+    be kept entirely as cookies. This is set either with the settings file
+    or on initialization, using the writer argument/setting field. Valid
+    values are "datastore" or "cookie".
+    </p>
+    <p>
+    Session can be used as a standard dictionary object.
+    <pre class="sh_python">
+        session = appengine_utilities.sessions.Session()
+        session["keyname"] = "value" # sets keyname to value
+        print session["keyname"] # will print value
+    </pre>
+    </p>
+    <p>
+        <b>Datastore Writer:</b>
+        The datastore writer was written with the focus being on security,
+        reliability, and performance. In that order.
+
+        It is based off of a session token system. All data is stored
+        server side in the datastore and memcache. A token is given to
+        the browser, and stored server side. Optionally (and on by default),
+        user agent and ip checking is enabled. Tokens have a configurable
+        time to live (TTL), which defaults to 5 seconds. The current token,
+        plus the previous 2, are valid for any request. This is done in order
+        to manage ajax enabled sites which may have more than on request
+        happening at a time. This means any token is valid for 15 seconds.
+        A request with a token who's TTL has passed will have a new token
+        generated.
+    </p>
+    <p>
+        In order to take advantage of the token system for an authentication
+        system, you will want to tie sessions to accounts, and make sure
+        only one session is valid for an account. You can do this by setting
+        a db.ReferenceProperty(_Appengine_Utilities_Session) attribute on
+        your user Model, and use the get_ds_session() method on a valid
+        session to populate it on login.
+    </p>
+    <p>
+        Note that even with this complex system, sessions can still be hijacked
+        and it will take the user logging in to retrieve the account. In the
+        future an ssl only cookie option may be implemented for the datastore
+        writer, which would further protect the session token from being
+        sniffed, however it would be restricted to using cookies on the
+        .appspot.com domain, and ssl requests are a finite resource. This is
+        why such a thing is not currently implemented.
+    </p>
+    <p>
+
+        Session data objects are stored in the datastore pickled, so any
+        python object is valid for storage.
+    </p>
+    <p>
+
+        <b>Cookie Writer:</b>
+        Sessions using the cookie writer are stored entirely in the browser
+        and no interaction with the datastore is required. This creates
+        a drastic improvement in performance, but provides no security for
+        session hijack. This is useful for requests where identity is not
+        important, but you wish to keep state between requests.
+    </p>
+    <p>
+
+        Information is stored in a json format, as pickled data from the
+        server is unreliable.
+    </p>
+    <p>
+
+        Note: There is no checksum validation of session data on this method,
+        it's streamlined for pure performance. If you need to make sure data
+        is not tampered with, use the datastore writer which stores the data
+        server side.
+    </p>
+    <p>
+
+        <b>django-middleware:</b>
+        Included with the GAEUtilties project is a
+        django-middleware.middleware.SessionMiddleware which can be included in
+        your settings file. This uses the cookie writer for anonymous requests,
+        and you can switch to the datastore writer on user login. This will
+        require an extra set in your login process of calling
+        request.session.save() once you validated the user information. This
+        will convert the cookie writer based session to a datastore writer.
+    </p>
+</div>
+{% endblock %}
+{% block content %}
+    {% if sess.flash %}
+    <p>{{ sess.flash }}</p>
+    {% endif %}
+    <p> Welcome to the sessions demo. You've viewed this page <strong>{{ sess.viewCount }}</strong> times during this session. Your session id is <strong>{{ sess.sid }}</strong> There are {{ session_length }} objects in your session data.
+<table><tr>
+<ul>
+<td><b>iteration test</b><br />
+{% for k in sess %}
+<li>{{ k }}</li>
+{% endfor %}
+</td><td><b>items test</b><br />
+{% for i in sess.items %}
+<li>{{ i }}</li>
+{% endfor %}
+</td><td><b>keys test</b><br />
+{% for k in sess.keys %}
+<li>{{ k }}</li>
+{% endfor %}
+</td><td><b>values test</b><br />
+{% for v in sess.values %}
+<li>{{ v }}</li>
+{% endfor %}
+</td></tr></table>
+model_test testval = {{ model_test }}<br />
+{{ protobuf }}<br />
+{{ testkey }}<br />
+<pre>
+{% filter escape %}
+{{ model_xml }}
+{% endfilter %}
+</pre>
+When the Django template library is upgraded this demo can be modified to show the values as well. For now this is enough to demonstrate iteration support.
+</ul><br />
+                <table><tr><td>
+                            <a href="/session">view this page again</a>
+                            </td></tr><tr><td>
+                            <a href="/session?setflash=true">set flash data</a>
+                            </td></tr><tr><td>
+                            <a href="/session?deleteSession=true">delete your session and start over</a>
+                            </td></tr><tr><td>
+                            <a href="/session?clearTestKey=true">clear the test key</a>
+                            </td></tr><tr><td>
+                            <a href="/session?setTestKey=true">set the test key</a>
+                </td></tr></table>
+<p>Memcache stats: {{ memcacheStats }}</p>
+<p>Session str: {{ sess_str }}</p>
+<div class="code">
+<h2>webapp class</h2>
+<pre class="sh_python">{% filter escape %}class SessionTestModel(db.Model):
+    testval = db.StringProperty()
+
+class SessionPage(webapp.RequestHandler):
+  def get(self):
+    self.sess = sessions.Session()
+    if not self.sess.has_key("model_test"):
+        self.sess["model_test"] = SessionTestModel(testval="test")
+        self.sess["model_test"].put()
+        # give the datastore time to submit the commit
+        time.sleep(1)
+    self.cookie_sess = sessions.Session(writer="cookie")
+    if self.request.get('deleteSession') == "true":
+        self.sess.delete()
+        print "Location: /session\n\n"
+    elif self.request.get('setflash') == "true":
+        self.sess['flash'] = 'You set a flash message! <a href="/session">Refresh this page</a> and this message is gone!'
+        print "Location: /session\n\n"
+    elif self.request.get('setTestKey') == "true":
+        self.sess['DeletableKey'] = 'delete me'
+        print "Location: /session\n\n"
+    elif self.request.get('clearTestKey') == "true":
+        self.sess.delete_item('DeletableKey')
+        print "Location: /session\n\n"
+    else:
+        keyname = 'testKey'
+        self.sess[keyname] = "test"
+        self.sess[keyname + '2'] = "test2"
+        self.sess[3] = "test3"
+        self.cookie_sess['cookie_test'] = "testing cookie values"
+        self.sess[u"unicode_key"] = u"unicode_value"
+
+        if not 'viewCount' in self.sess:
+            self.sess['viewCount'] = 1
+        else:
+            self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+        self.sess["model_test"].testval = unicode(self.sess['viewCount'])
+        testkey = self.sess["model_test"].put()
+        session_length = len(self.sess)
+        self.memcacheStats = memcache.get_stats()
+        template_values = {
+            'sess': self.sess,
+            'sess_str': str(self.sess),
+            'cookie_sess': self.cookie_sess,
+            'session_length': session_length,
+            'memcacheStats': self.memcacheStats,
+            'model_test': self.sess["model_test"].testval,
+            'testkey': testkey,
+        }
+        path = os.path.join(os.path.dirname(__file__), 'templates/session-new.html')
+        self.response.out.write(template.render(path, template_values)){% endfilter %}
+</pre>
+</div>
+{% endblock %}

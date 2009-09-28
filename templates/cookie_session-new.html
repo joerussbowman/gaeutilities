@@ -1,0 +1,73 @@
+{% extends "base-new.html" %}
+{% block header-content %}
+<h2>Cookie Session</h2>
+<div>
+    <p>
+    This is an example of use the Cookie Write for sessions. For more information
+    on session, see it's primary page <a href="/session">here.</a>
+</div>
+{% endblock %}
+{% block content %}
+    {% if sess.flash %}
+    <p>{{ sess.flash }}</p>
+    {% endif %}
+    <p> Welcome to the sessions demo. You've viewed this page <strong>{{ sess.viewCount }}</strong> times during this session. Your session id is <strong>{{ sess.sid }}</strong> There are {{ session_length }} objects in your session data.
+<table><tr>
+<ul>
+<td><b>iteration test</b><br />
+{% for k in sess %}
+<li>{{ k }}</li>
+{% endfor %}
+</td><td><b>items test</b><br />
+{% for i in sess.items %}
+<li>{{ i }}</li>
+{% endfor %}
+</td><td><b>keys test</b><br />
+{% for k in sess.keys %}
+<li>{{ k }}</li>
+{% endfor %}
+</td><td><b>values test</b><br />
+{% for v in sess.values %}
+<li>{{ v }}</li>
+{% endfor %}
+</td></tr></table>
+</ul><br />
+                You can <a href="/cookiesession">View this page again</a>, you can <a href="/cookiesession?setflash=true">Set flash data</a>, pr you can <a href="/cookiesession?deleteSession=true">Delete your session</a> and start over.</p>
+<p>Memcache stats: {{ memcacheStats }}</p>
+<p>Session str: {{ sess_str }}</p>
+
+<div class="code">
+<h2>webapp class</h2>
+<pre class="sh_python">{% filter escape %}
+class CookieSessionPage(webapp.RequestHandler):
+  def get(self):
+    self.sess = sessions.Session(writer="cookie")
+    if self.request.get('deleteSession') == "true":
+        self.sess.delete()
+        print "Location: /cookiesession\n\n"
+    elif self.request.get('setflash') == "true":
+        self.sess['flash'] = 'You set a flash message! <a href="/cookiesession">Refresh this page</a> and this message is gone!'
+        print "Location: /cookiesession\n\n"
+    else:
+        keyname = 'testKey'
+        self.sess[keyname] = "test"
+        self.sess[keyname + '2'] = "test2"
+        self.sess[3] = "test3"
+        if not 'viewCount' in self.sess:
+            self.sess['viewCount'] = 1
+        else:
+            self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+        self.sess[u"unicode_key"] = u"unicode_value"
+        session_length = len(self.sess)
+        self.memcacheStats = memcache.get_stats()
+        template_values = {
+            'sess': self.sess,
+            'sess_str': str(self.sess),
+            'session_length': session_length,
+            'memcacheStats': self.memcacheStats
+        }
+        path = os.path.join(os.path.dirname(__file__), 'templates/cookie_session-new.html')
+        self.response.out.write(template.render(path, template_values))
+{% endfilter %}</pre>
+</div>
+{% endblock %}

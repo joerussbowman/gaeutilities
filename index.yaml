@@ -17,12 +17,18 @@ indexes:
   - name: timeout
 
 # Unused in query history -- copied from input.
+- kind: TM
+  properties:
+  - name: __key__
+    direction: desc
+
+# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey
   - name: expires
 
-# Used 25 times in query history.
+# Used 12 times in query history.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey

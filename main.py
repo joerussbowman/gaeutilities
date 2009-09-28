@@ -10,7 +10,10 @@ Neither the name of the appengine-utilities project nor the names of its contrib
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
-import os, cgi, __main__, Cookie
+import os
+import __main__
+import time
+from google.appengine.api import urlfetch
 from google.appengine.ext.webapp import template
 from appengine_utilities import sessions
 from appengine_utilities import flash
@@ -21,15 +24,16 @@ import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
 from google.appengine.ext import db
+from django.utils import simplejson
 
 class MainPage(webapp.RequestHandler):
   def __init__(self):
     self.test = "event not fired"
 
   def get(self):
-    template_values = {
-    }
-    path = os.path.join(os.path.dirname(__file__), 'templates/index.html')
+    template_values = {}
+
+    path = os.path.join(os.path.dirname(__file__), 'templates/index-new.html')
     self.response.out.write(template.render(path, template_values))
 
 class FlashPage(webapp.RequestHandler):
@@ -42,7 +46,7 @@ class FlashPage(webapp.RequestHandler):
         template_values = {
             'flash': self.flash,
         }
-        path = os.path.join(os.path.dirname(__file__), 'templates/flash.html')
+        path = os.path.join(os.path.dirname(__file__), 'templates/flash-new.html')
         self.response.out.write(template.render(path, template_values))
 
 class AjaxSessionPage(webapp.RequestHandler):
@@ -54,9 +58,17 @@ class AjaxSessionPage(webapp.RequestHandler):
       self.sess['viewCount'] = int(self.sess['viewCount']) + 1
     self.response.out.write('viewcount is ' + str(self.sess['viewCount']))
 
+class SessionTestModel(db.Model):
+    testval = db.StringProperty()
+
 class SessionPage(webapp.RequestHandler):
   def get(self):
     self.sess = sessions.Session()
+    if not self.sess.has_key("model_test"):
+        self.sess["model_test"] = SessionTestModel(testval="test")
+        self.sess["model_test"].put()
+        # give the datastore time to submit the commit
+        time.sleep(1)
     self.cookie_sess = sessions.Session(writer="cookie")
     if self.request.get('deleteSession') == "true":
         self.sess.delete()
@@ -77,10 +89,13 @@ class SessionPage(webapp.RequestHandler):
         self.sess[3] = "test3"
         self.cookie_sess['cookie_test'] = "testing cookie values"
         self.sess[u"unicode_key"] = u"unicode_value"
+
         if not 'viewCount' in self.sess:
             self.sess['viewCount'] = 1
         else:
             self.sess['viewCount'] = int(self.sess['viewCount']) + 1
+        self.sess["model_test"].testval = unicode(self.sess['viewCount'])
+        testkey = self.sess["model_test"].put()
         session_length = len(self.sess)
         self.memcacheStats = memcache.get_stats()
         template_values = {
@@ -88,9 +103,11 @@ class SessionPage(webapp.RequestHandler):
             'sess_str': str(self.sess),
             'cookie_sess': self.cookie_sess,
             'session_length': session_length,
-            'memcacheStats': self.memcacheStats
+            'memcacheStats': self.memcacheStats,
+            'model_test': self.sess["model_test"].testval,
+            'testkey': testkey,
         }
-        path = os.path.join(os.path.dirname(__file__), 'templates/session.html')
+        path = os.path.join(os.path.dirname(__file__), 'templates/session-new.html')
         self.response.out.write(template.render(path, template_values))
 
 class CookieSessionPage(webapp.RequestHandler):
@@ -120,7 +137,7 @@ class CookieSessionPage(webapp.RequestHandler):
             'session_length': session_length,
             'memcacheStats': self.memcacheStats
         }
-        path = os.path.join(os.path.dirname(__file__), 'templates/cookie_session.html')
+        path = os.path.join(os.path.dirname(__file__), 'templates/cookie_session-new.html')
         self.response.out.write(template.render(path, template_values))
 
 
@@ -141,7 +158,7 @@ class EventPage(webapp.RequestHandler):
     }
     AEU_Events.subscribe("myEventFired", self.myCallback, {"msg": "You will never see this message because the event to set it is fired after the template_values have already been set."})
     AEU_Events.fire_event("myEventFired")
-    path = os.path.join(os.path.dirname(__file__), 'templates/event.html')
+    path = os.path.join(os.path.dirname(__file__), 'templates/event-new.html')
     self.response.out.write(template.render(path, template_values))
 
   def myCallback(self, msg):
@@ -171,7 +188,7 @@ class CachePage(webapp.RequestHandler):
         'dynamickey': self.cache["dynamickey"],
         'memcacheStats': self.memcacheStats,
     }
-    path = os.path.join(os.path.dirname(__file__), 'templates/cache.html')
+    path = os.path.join(os.path.dirname(__file__), 'templates/cache-new.html')
     self.response.out.write(template.render(path, template_values))
 
 
@@ -295,9 +312,40 @@ class ROTModelPage(webapp.RequestHandler):
           template_values["deletetest"] = "ERROR"
 
 
-      path = os.path.join(os.path.dirname(__file__), 'templates/rotmodel.html')
+      path = os.path.join(os.path.dirname(__file__), 'templates/rotmodel-new.html')
       self.response.out.write(template.render(path, template_values))
 
+
+class PageTestModel(db.Model):
+    testval = db.IntegerProperty()
+
+class PaginatorPage(webapp.RequestHandler):
+  def get(self):
+        template_values = {}
+
+        query = PageTestModel.all()
+        results = query.fetch(20)
+        if len(results) < 20:
+            for i in range(0, 20):
+                model = PageTestModel(testval=i)
+                model.put()
+            time.sleep(1)
+
+        
+        page1 = Paginator.get(model=PageTestModel, count=10)
+        page2 = Paginator.get(model=PageTestModel, count=10, start=page1["next"])
+
+        template_values["page1"] = page1
+        template_values["page2"] = page2
+        template_values["page_1_results"] = page1["results"]
+        template_values["page_1_previous"] = page1["previous"]
+        template_values["page_1_next"] = page1["next"]
+        template_values["page_2_results"] = page2["results"]
+        template_values["page_2_previous"] = page2["previous"]
+        template_values["page_2_next"] = page2["next"]
+
+        path = os.path.join(os.path.dirname(__file__), 'templates/paginator.html')
+        self.response.out.write(template.render(path, template_values))
 
 def main():
   application = webapp.WSGIApplication(
@@ -308,6 +356,7 @@ def main():
                                        ('/flash', FlashPage),
                                        ('/event', EventPage),
                                        ('/cache', CachePage),
+                                       ('/paginator', PaginatorPage),
                                        ('/rotmodel', ROTModelPage)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

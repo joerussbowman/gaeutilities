@@ -1,0 +1,103 @@
+{% extends "base-new.html" %}
+{% block header-content %}
+<h2>Event</h2>
+<div>
+    <p>
+    Event is a simple publish/subscribe based event dispatcher. It's a way
+    to add, or take advantage of, hooks in your application. If you want to
+    tie actions in with lower level classes you're developing within your
+    application, you can set events to fire, and then subscribe to them with
+    callback methods in other methods in your application.</p>
+    <p>
+    It sets itself to the __main__ function. In order to use it,
+    you must import it with your __main__ method, and make sure
+    you import __main__ and it's accessible for the methods where
+    you want to use it.</p>
+    <p>
+    For example, from sessions.py</p>
+    <pre class="sh_python">
+            # if the event class has been loaded, fire off the sessionDeleted event
+        if u"AEU_Events" in __main__.__dict__:
+            __main__.AEU_Events.fire_event(u"sessionDelete")
+    </pre>
+    You can the subscribe to session delete events, adding a callback
+    <pre class="sh_python">
+        if u"AEU_Events" in __main__.__dict__:
+            __main__.AEU_Events.subscribe(u"sessionDelete", clear_user_session)
+    </pre>
+
+    <h3>Methods:</h3>
+    <b>subscribe</b>(self, event, callback, args = None)
+    <p>
+        This method will subscribe a callback function to an event name.
+        <br />
+        Args:
+        <ul>
+            <li>event: The event to subscribe to.</li>
+            <li>callback: The callback method to run.</li>
+            <li>args: Optional arguments to pass with the callback.</li>
+        </ul>
+        Returns True
+        <p /><p />
+
+
+    <b>unsubscribe</b>(self, event, callback, args = None)
+    <p>
+        This method will unsubscribe a callback from an event.
+    </p>
+        Args:<ul>
+            <li>event: The event to subscribe to.</li>
+            <li>callback: The callback method to run.</li>
+            <li>args: Optional arguments to pass with the callback.</li>
+        </ul>
+        Returns True
+    <p />
+    <p />
+    <b>fire_event</b>(self, event = None)
+    <p>
+        This method is what a method uses to fire an event,
+        initiating all registered callbacks
+        <br />
+        Args:
+        <ul>
+            <li>event: The name of the event to fire.</li>
+        </ul>
+        Returns True
+    </p>
+</div>
+{% endblock %}
+{% block content %}
+<a href="/event?trigger=true">Click here</a> to trigger an event.<br />
+<a href="/event">Click here</a> to view without event triggered (in order to confirm events aren't getting cached by GAE)<br />
+msg: {{ msg }}<br />
+triggermsg: {{ triggermsg }}
+<div class="code">
+<h2>webapp class</h2>
+<pre class="sh_python">{% filter escape %}class EventPage(webapp.RequestHandler):
+  def __init__(self):
+        self.msg = ""
+        self.triggermsg = "I have not been triggered"
+
+  def get(self):
+    if self.request.get('trigger') == "true":
+        AEU_Events.subscribe("myTriggeredEventFired", self.myTriggeredCallback, {"msg": "Triggered!"})
+    AEU_Events.subscribe("myEventFired", self.myCallback, {"msg": "This message was set in myCallback."})
+    AEU_Events.fireEvent("myEventFired")
+    AEU_Events.fireEvent("myTriggeredEventFired")
+    template_values = {
+        'msg': self.msg,
+        'triggermsg': self.triggermsg,
+    }
+    AEU_Events.subscribe("myEventFired", self.myCallback, {"msg": "You will never see this message because the event to set it is fired after the template_values have already been set."})
+    AEU_Events.fireEvent("myEventFired")
+    path = os.path.join(os.path.dirname(__file__), 'templates/event.html')
+    self.response.out.write(template.render(path, template_values))
+
+  def myCallback(self, msg):
+    self.msg = msg
+
+  def myTriggeredCallback(self, msg):
+    self.triggermsg = msg
+{% endfilter %}</pre>
+</div>
+{% endblock %}
