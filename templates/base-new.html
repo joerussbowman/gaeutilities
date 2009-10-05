@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>gaeutilities - {% block title %}{% endblock %}</title>
+<link rel="stylesheet" href="/css/blueprint/screen.css" type="text/css" media="screen, projection">
+<link rel="stylesheet" href="/css/blueprint/print.css" type="text/css" media="print">
+<!--[if lt IE 8]>
+    <link rel="stylesheet" href="/static/blueprint/ie.css" type="text/css" media="screen, projection">
+<![endif]-->
+<script type="text/javascript" src="/yui/build/yui/yui-min.js"></script>
+<script type="text/javascript" src="/css/sh_main.min.js"></script>
+<link type="text/css" rel="stylesheet" href="/css/sh_vim.min.css">
+
+<style type="text/css">
+    a {
+        color: #446CD7;
+        text-decoration: none;
+    }
+    a:hover {
+        color: #446CD7;
+        text-decoration: underline;
+    }
+    .blue-text {
+        color: #446CD7;
+    }
+    .right {
+        float: right;
+    }
+    .left {
+        float: left;
+    }
+    .logo {
+        font-size: 205%;
+    }
+    .header-content {
+        color: #777777;
+        padding: 2px;
+    }
+    .header-content h3 {
+        color: #777777;
+    }
+    .class-menu li {
+        float: left;
+        list-style: none;
+        padding: 3px 10px 3px 10px;
+        margin: 5px;
+        text-align: left;
+        font-size: 110%;
+    }
+    .class-menu li a {
+        color: #00f;
+    }
+</style>
+</head>
+<!--
+PREFIX = '/css/'
+SUFFIX = '.js'
+-->
+<body onload="sh_highlightDocument('/css/', '.js');">
+
+<!--
+CLASS = 'sh_python.min'
+PREFIX + CLASS + SUFFIX = '/css/' + 'sh_pyton' + '.js'
+                        = '/css/sh_python.js'
+-->
+<div class="container">
+    <div class="span-16 blue-text">
+        <div class="logo">
+            <a href="/">gaeutilities</a>
+        </div>
+        <div class="slogan">
+            Utility classes to make working with appengine easier.
+        </div>
+    </div>
+    <div class="span-8 last">
+           <a href="/">Home</a>
+            <a href="http://github.com/joerussbowman/gaeutilities">Project Page</a>
+            <a href="http://groups.google.com/group/appengine-utilities">Group</a>
+            <a href="http://wiki.github.com/joerussbowman/gaeutilities">Wiki</a>
+            <a href="http://github.com/joerussbowman/gaeutilities/downloads">Downloads</a>
+    </div>
+    <div class="span-24 last class-menu">
+        <ul>
+            <li>
+                <a href="/">Home</a>
+            </li>
+            <li>
+                <a href="/session">Session</a>
+            </li>
+            <li>
+                <a href="/cookiesession">Cookie Session</a>
+            </li>
+            <li>
+                <a href="/flash">Flash</a>
+            </li>
+            <li>
+                <a href="/cache">Cache</a>
+            </li>
+            <li>
+                <a href="/event">Event</a>
+            </li>
+            <li>
+                <a href="/rotmodel">ROTModel</a>
+            </li>
+        </ul>
+    </div>
+    <div class="span-24 last header-content">
+        {% block header-content %}
+        {% endblock %}
+    </div>
+    <div class="span-24 last unit-tests">
+        {% block doc %}
+        {% endblock %}
+    </div>
+    <div class="span-24 last">
+        {% block content %}
+        {% endblock %}
+    </div>
+</div>
+</body>
+</html>
