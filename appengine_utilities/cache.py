@@ -318,7 +318,7 @@ class Cache(object):
         for key in keys:
             value = self.get(key)
             if value is not None:
-                dict[key] = val
+                dict[key] = value
         return dict
 
     def __getitem__(self, key):
