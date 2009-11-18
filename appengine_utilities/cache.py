@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import datetime
 import pickle
 import random
-import __main__
+import sys
 
 # google appengine import
 from google.appengine.ext import db
@@ -83,8 +83,8 @@ class Cache(object):
         if random.randint(1, 100) < self.clean_check_percent:
             self._clean_cache()
 
-        if 'AEU_Events' in __main__.__dict__:
-            __main__.AEU_Events.fire_event('cacheInitialized')
+        if 'AEU_Events' in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event('cacheInitialized')
 
     def _clean_cache(self):
         """
@@ -194,8 +194,8 @@ class Cache(object):
         memcache_timeout = timeout - datetime.datetime.now()
         memcache.set('cache-%s' % (key), value, int(memcache_timeout.seconds))
 
-        if 'AEU_Events' in __main__.__dict__:
-            __main__.AEU_Events.fire_event('cacheAdded')
+        if 'AEU_Events' in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event('cacheAdded')
 
         return self.get(key)
 
@@ -230,8 +230,8 @@ class Cache(object):
         memcache_timeout = timeout - datetime.datetime.now()
         memcache.set('cache-%s' % (key), value, int(memcache_timeout.seconds))
 
-        if 'AEU_Events' in __main__.__dict__:
-            __main__.AEU_Events.fire_event('cacheSet')
+        if 'AEU_Events' in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event('cacheSet')
 
         return self.get(key)
 
@@ -253,10 +253,10 @@ class Cache(object):
         if len(results) is 0:
             return None
 
-        if 'AEU_Events' in __main__.__dict__:
-            __main__.AEU_Events.fire_event('cacheReadFromDatastore')
-        if 'AEU_Events' in __main__.__dict__:
-            __main__.AEU_Events.fire_event('cacheRead')
+        if 'AEU_Events' in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event('cacheReadFromDatastore')
+        if 'AEU_Events' in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event('cacheRead')
 
         return results[0]
 
@@ -272,8 +272,8 @@ class Cache(object):
         memcache.delete('cache-%s' % (key))
         result = self._read(key)
         if result:
-            if 'AEU_Events' in __main__.__dict__:
-                __main__.AEU_Events.fire_event('cacheDeleted')
+            if 'AEU_Events' in sys.modules['__main__'].__dict__:
+                sys.modules['__main__'].AEU_Events.fire_event('cacheDeleted')
             result.delete()
         return True
 
@@ -288,18 +288,18 @@ class Cache(object):
         """
         mc = memcache.get('cache-%s' % (key))
         if mc:
-            if 'AEU_Events' in __main__.__dict__:
-                __main__.AEU_Events.fire_event('cacheReadFromMemcache')
-            if 'AEU_Events' in __main__.__dict__:
-                __main__.AEU_Events.fire_event('cacheRead')
+            if 'AEU_Events' in sys.modules['__main__'].__dict__:
+                sys.modules['__main__'].AEU_Events.fire_event('cacheReadFromMemcache')
+            if 'AEU_Events' in sys.modules['__main__'].__dict__:
+                sys.modules['__main__'].AEU_Events.fire_event('cacheRead')
             return mc
         result = self._read(key)
         if result:
             timeout = result.timeout - datetime.datetime.now()
             memcache.set('cache-%s' % (key), pickle.loads(result.value),
                int(timeout.seconds))
-            if 'AEU_Events' in __main__.__dict__:
-                __main__.AEU_Events.fire_event('cacheRead')
+            if 'AEU_Events' in sys.modules['__main__'].__dict__:
+                sys.modules['__main__'].AEU_Events.fire_event('cacheRead')
             return pickle.loads(result.value)
         else:
             raise KeyError

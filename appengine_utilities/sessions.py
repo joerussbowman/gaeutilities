@@ -34,7 +34,7 @@ import random
 import hashlib
 import Cookie
 import pickle
-import __main__
+import sys
 from time import strftime
 
 # google appengine imports
@@ -722,8 +722,8 @@ class Session(object):
         Returns True.
         """
         # if the event class has been loaded, fire off the preSessionDelete event
-        if u"AEU_Events" in __main__.__dict__:
-            __main__.AEU_Events.fire_event(u"preSessionDelete")
+        if u"AEU_Events" in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event(u"preSessionDelete")
         if hasattr(self, u"session"):
             self.session.delete()
         self.cookie_vals = {}
@@ -732,8 +732,8 @@ class Session(object):
             simplejson.dumps(self.cookie_vals)
         print self.output_cookie.output()
         # if the event class has been loaded, fire off the sessionDelete event
-        if u"AEU_Events" in __main__.__dict__:
-            __main__.AEU_Events.fire_event(u"sessionDelete")
+        if u"AEU_Events" in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event(u"sessionDelete")
         return True
 
     def delete(self):

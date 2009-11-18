@@ -24,7 +24,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import __main__
+import sys
 
 
 class Event(object):
@@ -35,21 +35,23 @@ class Event(object):
     application, you can set events to fire, and then subscribe to them with
     callback methods in other methods in your application.
 
-    It sets itself to the __main__ function. In order to use it,
-    you must import it with your __main__ method, and make sure
-    you import __main__ and it's accessible for the methods where
+    It sets itself to the sys.modules['__main__'] function. In order to use it,
+    you must import it with your sys.modules['__main__'] method, and make sure
+    you import sys.modules['__main__'] and it's accessible for the methods where
     you want to use it.
 
     For example, from sessions.py
 
-            # if the event class has been loaded, fire off the sessionDeleted event
-        if u"AEU_Events" in __main__.__dict__:
-            __main__.AEU_Events.fire_event(u"sessionDelete")
+            # if the event class has been loaded, fire off the sessionDeleted
+            # event
+        if u"AEU_Events" in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.fire_event(u"sessionDelete")
 
     You can the subscribe to session delete events, adding a callback
 
-        if u"AEU_Events" in __main__.__dict__:
-            __main__.AEU_Events.subscribe(u"sessionDelete", clear_user_session)
+        if u"AEU_Events" in sys.modules['__main__'].__dict__:
+            sys.modules['__main__'].AEU_Events.subscribe(u"sessionDelete", \
+            clear_user_session)
     """
 
     def __init__(self):
@@ -112,6 +114,6 @@ class Event(object):
                     e["callback"](e["args"])
         return True
 """
-Assign to the event class to __main__
+Assign to the event class to sys.modules['__main__']
 """
-__main__.AEU_Events = Event()
+sys.modules['__main__'].AEU_Events = Event()
