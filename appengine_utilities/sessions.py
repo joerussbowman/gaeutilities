@@ -673,10 +673,12 @@ class Session(object):
 
         Returns a list of datastore entities.
         """
-        if keyname != None:
-            return self.session.get_item(keyname)
-        return self.session.get_items()
-
+        if hasattr(self, 'session'):
+            if keyname != None:
+                return self.session.get_item(keyname)
+            return self.session.get_items()
+        return None
+    
     def _validate_key(self, keyname):
         """
         private method
