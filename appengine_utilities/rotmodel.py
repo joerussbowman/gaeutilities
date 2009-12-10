@@ -54,7 +54,7 @@ class ROTModel(db.Model):
         while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.get(keys)
-            except db.Timeout():
+            except db.Timeout:
                 count += 1
                 time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
@@ -66,7 +66,7 @@ class ROTModel(db.Model):
         while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.get_by_id(ids, parent)
-            except db.Timeout():
+            except db.Timeout:
                 count += 1
                 time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
@@ -84,14 +84,14 @@ class ROTModel(db.Model):
             while count < settings.rotmodel["RETRY_ATTEMPTS"]:
                 try:
                     return db.get(keys)
-                except db.Timeout():
+                except db.Timeout:
                     count += 1
                     time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
             while count < settings.rotmodel["RETRY_ATTEMPTS"]:
                 try:
                     return db.get(*keys)
-                except db.Timeout():
+                except db.Timeout:
                     count += 1
                     time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
 
@@ -110,7 +110,7 @@ class ROTModel(db.Model):
         while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.put(self)
-            except db.Timeout():
+            except db.Timeout:
                 count += 1
                 time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
@@ -121,7 +121,7 @@ class ROTModel(db.Model):
         while count < settings.rotmodel["RETRY_ATTEMPTS"]:
             try:
                 return db.Model.delete(self)
-            except db.Timeout():
+            except db.Timeout:
                 count += 1
                 time.sleep(count * settings.rotmodel["RETRY_INTERVAL"])
         else:
