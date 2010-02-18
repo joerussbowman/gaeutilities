@@ -81,7 +81,10 @@ class Cache(object):
         self.default_timeout = default_timeout
 
         if random.randint(1, 100) < self.clean_check_percent:
-            self._clean_cache()
+            try:
+                self._clean_cache()
+            except:
+                pass
 
         if 'AEU_Events' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].AEU_Events.fire_event('cacheInitialized')
@@ -233,7 +236,7 @@ class Cache(object):
         if 'AEU_Events' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].AEU_Events.fire_event('cacheSet')
 
-        return self.get(key)
+        return value
 
     def _read(self, key = None):
         """
