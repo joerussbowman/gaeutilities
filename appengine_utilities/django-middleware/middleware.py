@@ -60,3 +60,8 @@ class SessionMiddleware(object):
 
     def save(self):
         self.request.session = sessions.Session()
+
+    def process_response(self, request, response):
+        if hasattr(request, "session"):
+            response.cookies= request.session.output_cookie
+
