@@ -374,6 +374,11 @@ class _DatastoreWriter(object):
             del(session.cookie_vals[keyname])
             session.output_cookie["%s_data" % (session.cookie_name)] = \
                 simplejson.dumps(session.cookie_vals)
+            session.output_cookie["%s_data" % (session.cookie_name)]["path"] = \
+                session.cookie_path
+            if session.cookie_domain:
+                session.output_cookie["%s_data" % \
+                    (session.cookie_name)]["domain"] = session.cookie_domain
             print session.output_cookie.output()
 
         sessdata = session._get(keyname=keyname)
@@ -417,6 +422,11 @@ class _CookieWriter(object):
         # so let it raise exceptions
         session.output_cookie["%s_data" % (session.cookie_name)] = \
             simplejson.dumps(session.cookie_vals)
+        session.output_cookie["%s_data" % (session.cookie_name)]["path"] = \
+            session.cookie_path
+        if session.cookie_domain:
+            session.output_cookie["%s_data" % \
+                (session.cookie_name)]["domain"] = session.cookie_domain
         print session.output_cookie.output()
         return True
 
@@ -496,6 +506,7 @@ class Session(object):
     COOKIE_NAME = settings.session["COOKIE_NAME"]
 
     def __init__(self, cookie_path=settings.session["DEFAULT_COOKIE_PATH"],
+            cookie_domain=settings.session["DEFAULT_COOKIE_DOMAIN"],
             cookie_name=settings.session["COOKIE_NAME"],
             session_expire_time=settings.session["SESSION_EXPIRE_TIME"],
             clean_check_percent=settings.session["CLEAN_CHECK_PERCENT"],
@@ -510,6 +521,9 @@ class Session(object):
         Initializer
 
         Args:
+          cookie_path: The path setting for the cookie.
+          cookie_domain: The domain setting for the cookie. (Set to False
+                        to not use)
           cookie_name: The name for the session cookie stored in the browser.
           session_expire_time: The amount of time between requests before the
               session expires.
@@ -527,6 +541,7 @@ class Session(object):
         """
 
         self.cookie_path = cookie_path
+        self.cookie_domain = cookie_domain
         self.cookie_name = cookie_name
         self.session_expire_time = session_expire_time
         self.integrate_flash = integrate_flash
@@ -613,7 +628,9 @@ class Session(object):
                         do_put = True
 
             self.output_cookie[cookie_name] = self.sid
-            self.output_cookie[cookie_name]["path"] = cookie_path
+            self.output_cookie[cookie_name]["path"] = self.cookie_path
+            if self.cookie_domain:
+                self.output_cookie[cookie_name]["domain"] = self.cookie_domain
             if self.set_cookie_expires:
                 self.output_cookie[cookie_name]["expires"] = \
                     self.session_expire_time
@@ -732,6 +749,12 @@ class Session(object):
         self.cache = {}
         self.output_cookie["%s_data" % (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
+        self.output_cookie["%s_data" % (self.cookie_name)]["path"] = \
+            self.cookie_path
+        if self.cookie_domain:
+            self.output_cookie["%s_data" % \
+                (self.cookie_name)]["domain"] = self.cookie_domain
+
         print self.output_cookie.output()
         # if the event class has been loaded, fire off the sessionDelete event
         if u"AEU_Events" in sys.modules['__main__'].__dict__:
@@ -848,6 +871,12 @@ class Session(object):
         self.cookie_vals = {}
         self.output_cookie["%s_data" %s (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
+        self.output_cookie["%s_data" % (self.cookie_name)]["path"] = \
+            self.cookie_path
+        if self.cookie_domain:
+            self.output_cookie["%s_data" % \
+                (self.cookie_name)]["domain"] = self.cookie_domain
+
         print self.output_cookie.output()
         return True
 
@@ -1076,6 +1105,12 @@ class Session(object):
             bad_key = False
             self.output_cookie["%s_data" % (self.cookie_name)] = \
                 simplejson.dumps(self.cookie_vals)
+            self.output_cookie["%s_data" % (self.cookie_name)]["path"] = \
+                self.cookie_path
+            if self.cookie_domain:
+                self.output_cookie["%s_data" % \
+                    (self.cookie_name)]["domain"] = self.cookie_domain
+
             print self.output_cookie.output()
         if bad_key:
             raise KeyError(unicode(keyname))

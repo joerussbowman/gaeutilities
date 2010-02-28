@@ -10,43 +10,36 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Unused in query history -- copied from input.
 - kind: Model
   properties:
   - name: cachekey
   - name: timeout
 
-# Unused in query history -- copied from input.
 - kind: TM
   properties:
   - name: __key__
     direction: desc
 
-# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey
   - name: expires
 
-# Used 13 times in query history.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cachekey
   - name: timeout
 
-# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Cache
   properties:
   - name: cid
   - name: expires
 
-# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_Sessions
   properties:
   - name: sid
   - name: ua
 
-# Unused in query history -- copied from input.
 - kind: _AppEngineUtilities_SessionsData
   properties:
   - name: keyname

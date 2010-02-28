@@ -33,6 +33,9 @@ __date__ ="$Sep 11, 2009 4:20:11 PM$"
 session = {    
     "COOKIE_NAME": "gaeutilities_session",
     "DEFAULT_COOKIE_PATH": "/",
+    "DEFAULT_COOKIE_DOMAIN": False, # Set to False if you do not want this value
+                                    # set on the cookie, otherwise put the
+                                    # domain value you wish used.
     "SESSION_EXPIRE_TIME": 7200,    # sessions are valid for 7200 seconds
                                     # (2 hours)
     "INTEGRATE_FLASH": True,        # integrate functionality from flash module?
