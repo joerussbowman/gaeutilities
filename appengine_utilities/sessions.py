@@ -53,7 +53,7 @@ try:
 
     if settings.__name__.rsplit('.', 1)[0] != settings_default.__name__.rsplit('.', 1)[0]:
         settings = settings_default
- except:
+except:
     settings = settings_default
 
 

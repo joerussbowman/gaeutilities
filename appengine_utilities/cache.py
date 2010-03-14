@@ -38,9 +38,13 @@ from google.appengine.api import memcache
 
 # settings
 try:
+    import settings_default
     import settings
+
+    if settings.__name__.rsplit('.', 1)[0] != settings_default.__name__.rsplit('.', 1)[0]:
+        settings = settings_default
 except:
-    import settings_default as settings
+    settings = settings_default
     
 class _AppEngineUtilities_Cache(db.Model):
     cachekey = db.StringProperty()

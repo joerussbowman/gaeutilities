@@ -33,9 +33,13 @@ from django.utils import simplejson
 
 # settings
 try:
+    import settings_default
     import settings
+
+    if settings.__name__.rsplit('.', 1)[0] != settings_default.__name__.rsplit('.', 1)[0]:
+        settings = settings_default
 except:
-    import settings_default as settings
+    settings = settings_default
 
 COOKIE_NAME = settings.flash["COOKIE_NAME"]
 
