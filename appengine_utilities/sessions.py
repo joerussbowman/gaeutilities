@@ -575,8 +575,8 @@ class Session(object):
                 self.cache[k] = self.cookie_vals[k]
                 # sync the input cookie with the output cookie
                 self.output_cookie["%s_data" % (self.cookie_name)] = \
-                    self.cookie["%s_data" % (self.cookie_name)]
-        except:
+                    simplejson.dumps(self.cookie_vals) #self.cookie["%s_data" % (self.cookie_name)]
+        except Exception, e:
             self.cookie_vals = {}
 
 
