@@ -468,8 +468,8 @@ class Session(object):
         In order to take advantage of the token system for an authentication
         system, you will want to tie sessions to accounts, and make sure
         only one session is valid for an account. You can do this by setting
-        a db.ReferenceProperty(_Appengine_Utilities_Session) attribute on
-        your user Model, and use the get_ds_session() method on a valid
+        a db.ReferenceProperty(_AppEngineUtilities_Session) attribute on
+        your user Model, and use the get_ds_entity() method on a valid
         session to populate it on login.
 
         Note that even with this complex system, sessions can still be hijacked

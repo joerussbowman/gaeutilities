@@ -36,7 +36,7 @@ of session data will update the memcache. During a read, first the memcache
 is checked, and if that fails, the datastore is checked. If a hit fails in
 memcache, but works in the datastore, the memcache is updated.
 
-Session Id Regneration
+Session Id Regeneration
 =================
 
 Because Google Appengine doesn't support SSL (as of the writing of this
