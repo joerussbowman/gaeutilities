@@ -1,4 +1,10 @@
 Changelog
+.8
+ - Dropped ROTModel support throughout the project, as Google has 
+    moved that functionality internal to db.Model.
+ - Various documentation updates.
+ - Several bugfixes, issues #10 and #11 resolved.
+
 
 .7.1
  - sessions: cookie_name, clean_check_percent, integrate_flash added 

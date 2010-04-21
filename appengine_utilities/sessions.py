@@ -43,9 +43,6 @@ from google.appengine.api import memcache
 
 from django.utils import simplejson
 
-# appengine_utilities import
-from rotmodel import ROTModel
-
 # settings
 try:
     import settings_default
@@ -59,11 +56,10 @@ except:
 
 
 
-class _AppEngineUtilities_Session(ROTModel):
+class _AppEngineUtilities_Session(db.Model):
     """
     Model for the sessions in the datastore. This contains the identifier and
-    validation information for the session. Uses ROTModel rather than db.Model
-    in order to make more attempts to retrieve information on get(). 
+    validation information for the session.
     """
 
     sid = db.StringListProperty()
@@ -79,9 +75,6 @@ class _AppEngineUtilities_Session(ROTModel):
         """
         Extends put so that it writes vaules to memcache as well as the
         datastore, and keeps them in sync, even when datastore writes fails.
-        It also uses a db.put(), rather than the ROTModel put, to avoid
-        retries on puts. With the memcache layer this optimizes performance,
-        stopping on db.Timeout rather than retrying.
 
         Returns the session object.
         """
@@ -284,7 +277,7 @@ class _AppEngineUtilities_Session(ROTModel):
                     valid = True
         return unicode(self.session_key)
             
-class _AppEngineUtilities_SessionData(ROTModel):
+class _AppEngineUtilities_SessionData(db.Model):
     """
     Model for the session data in the datastore.
     """
