@@ -35,6 +35,7 @@ import hashlib
 import Cookie
 import pickle
 import sys
+import logging
 from time import strftime
 
 # google appengine imports
@@ -63,7 +64,7 @@ class _AppEngineUtilities_Session(db.Model):
     """
 
     sid = db.StringListProperty()
-    session_key = db.FloatProperty()
+    session_key = db.StringProperty()
     ip = db.StringProperty()
     ua = db.StringProperty()
     last_activity = db.DateTimeProperty()
@@ -80,11 +81,12 @@ class _AppEngineUtilities_Session(db.Model):
         """
         if self.session_key:
             memcache.set(u"_AppEngineUtilities_Session_%s" % \
-                (unicode(self.session_key)), self)
+                (str(self.session_key)), self)
         else:
             # new session, generate a new key, which will handle the
             # put and set the memcache
-            self.create_key()
+            self.session_key = str(db.put(self))
+            # self.create_key()
 
         self.last_activity = datetime.datetime.now()
 
@@ -92,11 +94,11 @@ class _AppEngineUtilities_Session(db.Model):
             self.dirty = False
             db.put(self)
             memcache.set(u"_AppEngineUtilities_Session_%s" % \
-                (unicode(self.session_key)), self)
+                (str(self.session_key)), self)
         except:
             self.dirty = True
             memcache.set(u"_AppEngineUtilities_Session_%s" % \
-                (unicode(self.session_key)), self)
+                (str(self.session_key)), self)
 
         return self
 
@@ -115,7 +117,7 @@ class _AppEngineUtilities_Session(db.Model):
             return None
         session_key = session_obj.sid.split(u'_')[0]
         session = memcache.get(u"_AppEngineUtilities_Session_%s" % \
-            (unicode(session_key)))
+            (str(session_key)))
         if session:
             if session.deleted == True:
                 session.delete()
@@ -138,21 +140,18 @@ class _AppEngineUtilities_Session(db.Model):
                 return None
  
         # Not in memcache, check datastore
-        query = _AppEngineUtilities_Session.all()
-        query.filter(u"sid = ", session_obj.sid)
-        results = query.fetch(1)
-        if len(results) > 0:
-            sessionAge = datetime.datetime.now() - results[0].last_activity
-            if sessionAge.seconds > session_obj.session_expire_time:
-                results[0].delete()
-                return None
-            memcache.set(u"_AppEngineUtilities_Session_%s" % \
-                (unicode(session_key)), results[0])
-            memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
-                (unicode(session_key)), results[0].get_items_ds())
-            return results[0]
-        else:
+        
+        ds_session = db.get(str(session_key))
+        sessionAge = datetime.datetime.now() - ds_session.last_activity
+        if sessionAge.seconds > session_obj.session_expire_time:
+            ds_session.delete()
             return None
+        memcache.set(u"_AppEngineUtilities_Session_%s" % \
+            (str(session_key)), ds_session)
+        memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
+            (str(session_key)), ds_session.get_items_ds())
+        return ds_session
+
 
     def get_items(self):
         """
@@ -160,7 +159,7 @@ class _AppEngineUtilities_Session(db.Model):
         and will try the datastore next.
         """
         items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
-            (unicode(self.session_key)))
+            (str(self.session_key)))
         if items:
             for item in items:
                 if item.deleted == True:
@@ -183,7 +182,7 @@ class _AppEngineUtilities_Session(db.Model):
         Returns the session data object if it exists, otherwise returns None
         """
         mc = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
-            (unicode(self.session_key)))
+            (str(self.session_key)))
         if mc:
             for item in mc:
                 if item.keyname == keyname:
@@ -192,12 +191,12 @@ class _AppEngineUtilities_Session(db.Model):
                         return None
                     return item
         query = _AppEngineUtilities_SessionData.all()
-        query.filter(u"session_key = ", self.session_key)
+        query.filter(u"session = ", self)
         query.filter(u"keyname = ", keyname)
         results = query.fetch(1)
         if len(results) > 0:
             memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
-                (unicode(self.session_key)), self.get_items_ds())
+                (str(self.session_key)), self.get_items_ds())
             return results[0]
         return None
 
@@ -209,7 +208,7 @@ class _AppEngineUtilities_Session(db.Model):
         Returns a list of session data entities.
         """
         query = _AppEngineUtilities_SessionData.all()
-        query.filter(u"session_key", self.session_key)
+        query.filter(u"session", self)
         results = query.fetch(1000)
         return results
 
@@ -227,12 +226,12 @@ class _AppEngineUtilities_Session(db.Model):
             db.delete(results)
             db.delete(self)
             memcache.delete_multi([u"_AppEngineUtilities_Session_%s" % \
-                (unicode(self.session_key)), \
+                (str(self.session_key)), \
                 u"_AppEngineUtilities_SessionData_%s" % \
-                (unicode(self.session_key))])
+                (str(self.session_key))])
         except:
             mc = memcache.get(u"_AppEngineUtilities_Session_%s" %+ \
-                (unicode(self.session_key)))
+                (str(self.session_key)))
             if mc:
                 mc.deleted = True
             else:
@@ -252,12 +251,12 @@ class _AppEngineUtilities_Session(db.Model):
 
         Returns the key value as a unicode string.
         """
-        self.session_key = time.time()
+        #self.session_key = time.time()
         valid = False
         while valid == False:
             # verify session_key is unique
             if memcache.get(u"_AppEngineUtilities_Session_%s" % \
-                (unicode(self.session_key))):
+                (str(self.session_key))):
                 self.session_key = self.session_key + 0.001
             else:
                 query = _AppEngineUtilities_Session.all()
@@ -269,23 +268,24 @@ class _AppEngineUtilities_Session(db.Model):
                     try:
                         self.put()
                         memcache.set(u"_AppEngineUtilities_Session_%s" %+ \
-                            (unicode(self.session_key)), self)
+                            (str(self.session_key)), self)
                     except:
                         self.dirty = True
                         memcache.set(u"_AppEngineUtilities_Session_%s" % \
-                            (unicode(self.session_key)), self)
+                            (str(self.session_key)), self)
                     valid = True
-        return unicode(self.session_key)
+        return str(self.session_key)
             
 class _AppEngineUtilities_SessionData(db.Model):
     """
     Model for the session data in the datastore.
     """
 
-    session_key = db.FloatProperty()
+    # session_key = db.FloatProperty()
     keyname = db.StringProperty()
     content = db.BlobProperty()
     model = db.ReferenceProperty()
+    session = db.ReferenceProperty(_AppEngineUtilities_Session)
     dirty = db.BooleanProperty(default=False)
     deleted = db.BooleanProperty(default=False)
 
@@ -305,7 +305,7 @@ class _AppEngineUtilities_SessionData(db.Model):
 
         # update or insert in memcache
         mc_items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
-            (unicode(self.session_key)))
+            (str(self.session.key())))
         if mc_items:
             value_updated = False
             for item in mc_items:
@@ -315,13 +315,13 @@ class _AppEngineUtilities_SessionData(db.Model):
                     item.content = self.content
                     item.model = self.model
                     memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
-                        (unicode(self.session_key)), mc_items)
+                        (str(self.session.key())), mc_items)
                     value_updated = True
                     break
             if value_updated == False:
                 mc_items.append(self)
                 memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
-                    (unicode(self.session_key)), mc_items)
+                    (str(self.session.key())), mc_items)
         return return_val
 
     def delete(self):
@@ -335,7 +335,7 @@ class _AppEngineUtilities_SessionData(db.Model):
         except:
             self.deleted = True
         mc_items = memcache.get(u"_AppEngineUtilities_SessionData_%s" % \
-            (unicode(self.session_key)))
+            (str(self.session.key())))
         value_handled = False
         for item in mc_items:
             if value_handled == True:
@@ -346,7 +346,7 @@ class _AppEngineUtilities_SessionData(db.Model):
                 else:
                     mc_items.remove(item)
                 memcache.set(u"_AppEngineUtilities_SessionData_%s" % \
-                    (unicode(self.session_key)), mc_items)
+                    (str(self.session.key())), mc_items)
         return True
         
 
@@ -383,7 +383,7 @@ class _DatastoreWriter(object):
         sessdata = session._get(keyname=keyname)
         if sessdata is None:
             sessdata = _AppEngineUtilities_SessionData()
-            sessdata.session_key = session.session.session_key
+            # sessdata.session_key = session.session.key()
             sessdata.keyname = keyname
         try:
             db.model_to_protobuf(value)
@@ -393,6 +393,7 @@ class _DatastoreWriter(object):
         except:
             sessdata.content = pickle.dumps(value)
             sessdata.model = None
+        sessdata.session = session.session
             
         session.cache[keyname] = value
         return sessdata.put()
@@ -666,7 +667,7 @@ class Session(object):
 
         Returns session id as a unicode string.
         """
-        sid = u"%s_%s" % (self.session.session_key,
+        sid = u"%s_%s" % (str(self.session.key()),
             hashlib.md5(repr(time.time()) + \
             unicode(random.random())).hexdigest()
         )
