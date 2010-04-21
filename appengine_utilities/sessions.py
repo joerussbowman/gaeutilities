@@ -64,7 +64,6 @@ class _AppEngineUtilities_Session(db.Model):
     """
 
     sid = db.StringListProperty()
-    #session_key = db.StringProperty()
     ip = db.StringProperty()
     ua = db.StringProperty()
     last_activity = db.DateTimeProperty()
@@ -86,7 +85,6 @@ class _AppEngineUtilities_Session(db.Model):
             # new session, generate a new key, which will handle the
             # put and set the memcache
             db.put(self)
-            # self.create_key()
 
         self.last_activity = datetime.datetime.now()
 
@@ -780,7 +778,26 @@ class Session(object):
 
         Returns True on completion
         """
-        duration = datetime.timedelta(seconds=self.session_expire_time)
+        self.clean_old_sessions(self.session_expire_time, 50)
+
+
+    @classmethod
+    def clean_old_sessions(cls, session_expire_time, count=50):
+        """
+        Delete expired sessions from the datastore.
+
+        This is a class method which can be used by applications for
+        maintenance if they don't want to use the built in session
+        cleaning.
+
+        Args:
+          count: The amount of session to clean.
+          session_expire_time: The age in seconds to determine outdated
+                               sessions.
+
+        Returns True on completion
+        """
+        duration = datetime.timedelta(seconds=session_expire_time)
         session_age = datetime.datetime.now() - duration
         query = _AppEngineUtilities_Session.all()
         query.filter(u"last_activity <", session_age)
