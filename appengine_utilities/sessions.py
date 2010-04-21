@@ -558,19 +558,22 @@ class Session(object):
         string_cookie = os.environ.get(u"HTTP_COOKIE", u"")
         self.cookie = Cookie.SimpleCookie()
         self.output_cookie = Cookie.SimpleCookie()
-        self.cookie.load(string_cookie)
-        try:
-            self.cookie_vals = \
-                simplejson.loads(self.cookie["%s_data" % (self.cookie_name)].value)
-                # sync self.cache and self.cookie_vals which will make those
-                # values available for all gets immediately.
-            for k in self.cookie_vals:
-                self.cache[k] = self.cookie_vals[k]
-                # sync the input cookie with the output cookie
-                self.output_cookie["%s_data" % (self.cookie_name)] = \
-                    simplejson.dumps(self.cookie_vals) #self.cookie["%s_data" % (self.cookie_name)]
-        except Exception, e:
-            self.cookie_vals = {}
+        if string_cookie == "":
+          self.cookie_vals = {}
+        else:
+            self.cookie.load(string_cookie)
+            try:
+                self.cookie_vals = \
+                    simplejson.loads(self.cookie["%s_data" % (self.cookie_name)].value)
+                    # sync self.cache and self.cookie_vals which will make those
+                    # values available for all gets immediately.
+                for k in self.cookie_vals:
+                    self.cache[k] = self.cookie_vals[k]
+                    # sync the input cookie with the output cookie
+                    self.output_cookie["%s_data" % (self.cookie_name)] = \
+                        simplejson.dumps(self.cookie_vals) #self.cookie["%s_data" % (self.cookie_name)]
+            except Exception, e:
+                self.cookie_vals = {}
 
 
         if writer == "cookie":
