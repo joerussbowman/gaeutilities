@@ -20,3 +20,8 @@ Flash: Functionality to provide next request messages, that integrates with
 
 Event: A simple subscribe/publish event model, useful for creating hooks
   within your applications.
+
+ROTModel: (soon to be deprecated) A wrapper for db.Model that will automatically
+  retry reads/writes when a timeout is encounterd. This functionality was
+  introduced natively into Appengine a while ago, and this module will be
+  deprecated shortly.
