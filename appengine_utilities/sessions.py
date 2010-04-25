@@ -612,11 +612,13 @@ class Session(object):
                 if self.sid != None or self.sid != u"":
                     self.session.put()
 
-        if self.set_cookie_expires:
-            if not self.output_cookie.has_key("%s_data" % (cookie_name)):
-                self.output_cookie["%s_data" % (cookie_name)] = u""
-            self.output_cookie["%s_data" % (cookie_name)]["expires"] = \
-                self.session_expire_time
+        # Only set the "_data" cookie if there is actual data
+        if self.output_cookie.has_key("%s_data" % (cookie_name)):
+            # Set the path of the "_data" cookie
+            self.output_cookie["%s_data" % (cookie_name)]["path"] = cookie_path
+            if self.set_cookie_expires:
+                self.output_cookie["%s_data" % (cookie_name)]["expires"] = \
+                    self.session_expire_time
         print self.output_cookie.output()
 
         # fire up a Flash object if integration is enabled
