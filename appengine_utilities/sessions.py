@@ -727,6 +727,9 @@ class Session(object):
         if self.cookie_domain:
             self.output_cookie["%s_data" % \
                 (self.cookie_name)]["domain"] = self.cookie_domain
+        # Delete the cookies (session & data) in the browser
+        self.output_cookie[self.cookie_name]["expires"] = 0
+        self.output_cookie["%s_data" % (self.cookie_name)]["expires"] = 0
 
         print self.output_cookie.output()
         # if the event class has been loaded, fire off the sessionDelete event
@@ -868,6 +871,8 @@ class Session(object):
         if self.cookie_domain:
             self.output_cookie["%s_data" % \
                 (self.cookie_name)]["domain"] = self.cookie_domain
+        # Delete the "_data" cookie in the browser
+        self.output_cookie["%s_data" % (self.cookie_name)]["expires"] = 0
 
         print self.output_cookie.output()
         return True
