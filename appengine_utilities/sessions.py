@@ -864,7 +864,7 @@ class Session(object):
         # delete from memcache
         self.cache = {}
         self.cookie_vals = {}
-        self.output_cookie["%s_data" %s (self.cookie_name)] = \
+        self.output_cookie["%s_data" % (self.cookie_name)] = \
             simplejson.dumps(self.cookie_vals)
         self.output_cookie["%s_data" % (self.cookie_name)]["path"] = \
             self.cookie_path
