@@ -113,7 +113,7 @@ class _AppEngineUtilities_Session(db.Model):
         """
         if session_obj.sid == None:
             return None
-        session_key = session_obj.sid.split(u'_')[0]
+        session_key = session_obj.sid.rsplit(u'_', 1)[0]
         session = memcache.get(u"_AppEngineUtilities_Session_%s" % \
             (str(session_key)))
         if session:
