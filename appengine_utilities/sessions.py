@@ -229,7 +229,7 @@ class _AppEngineUtilities_Session(db.Model):
                 u"_AppEngineUtilities_SessionData_%s" % \
                 (str(self.key()))])
         except:
-            mc = memcache.get(u"_AppEngineUtilities_Session_%s" %+ \
+            mc = memcache.get(u"_AppEngineUtilities_Session_%s" % \
                 (str(self.key())))
             if mc:
                 mc.deleted = True
