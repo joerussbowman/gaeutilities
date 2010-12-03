@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2008, appengine-utilities project
+Copyright (c) 2010, gaeutilities project
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -323,6 +323,29 @@ class _AppEngineUtilities_SessionData(db.Model):
 
 class _DatastoreWriter(object):
 
+    def write_session(self, session, keys):
+        vals = []
+        for keyname in keys:
+            sessdata = session._get(keyname=keyname)
+            if sessdata is None:
+                sessdata = _AppEngineUtilities_SessionData()
+                sessdata.keyname = keyname
+
+            try:
+                db.model_to_protobuf(value)
+                if not value.is_saved():
+                    value.put()
+                sessdata.model = value
+            except:
+                sessdata.content = pickle.dumps(value)
+                sessdata.model = None
+            sessdata.session = session.session
+            vals.append(sessdata)
+            #TODO working here, need to move putting into memcache here,
+            # the _AppEngineUtilities_SessionData model will become a standard
+            # model and lose the put() override.
+        db.put(vals)
+
     def put(self, keyname, value, session):
         """
         Insert a keyname/value pair into the datastore for the session.
@@ -336,20 +359,6 @@ class _DatastoreWriter(object):
         keyname = session._validate_key(keyname)
         if value is None:
             raise ValueError(u"You must pass a value to put.")
-
-        # datestore write trumps cookie. If there is a cookie value
-        # with this keyname, delete it so we don't have conflicting
-        # entries.
-        if session.cookie_vals.has_key(keyname):
-            del(session.cookie_vals[keyname])
-            session.output_cookie["%s_data" % (session.cookie_name)] = \
-                simplejson.dumps(session.cookie_vals)
-            session.output_cookie["%s_data" % (session.cookie_name)]["path"] = \
-                session.cookie_path
-            if session.cookie_domain:
-                session.output_cookie["%s_data" % \
-                    (session.cookie_name)]["domain"] = session.cookie_domain
-            print session.output_cookie.output()
 
         sessdata = session._get(keyname=keyname)
         if sessdata is None:
@@ -492,6 +501,7 @@ class Session(object):
         Initializer
 
         Args:
+          request: The request handler being decorated.
           cookie_path: The path setting for the cookie.
           cookie_domain: The domain setting for the cookie. (Set to False
                         to not use)
@@ -523,10 +533,16 @@ class Session(object):
         self.last_activity_update = last_activity_update
         self.writer = writer
 
+    def __call__(self, f):
         # make sure the page is not cached in the browser
         print self.no_cache_headers()
-        # Check the cookie and, if necessary, create a new one.
+
+        # cache object is used to store write items as the session is processed.
+        # This avoids multiple calls to the datastore or cookie processing if
+        # session variable has already been accessed.
         self.cache = {}
+        
+        # Check the cookie and, if necessary, create a new one.
         string_cookie = os.environ.get(u"HTTP_COOKIE", u"")
         self.cookie = Cookie.SimpleCookie()
         self.output_cookie = Cookie.SimpleCookie()
@@ -544,13 +560,21 @@ class Session(object):
                     # sync the input cookie with the output cookie
                     self.output_cookie["%s_data" % (self.cookie_name)] = \
                         simplejson.dumps(self.cookie_vals) #self.cookie["%s_data" % (self.cookie_name)]
-            except Exception, e:
+            except Exception:
                 self.cookie_vals = {}
 
 
-        if writer == "cookie":
+        if self.writer == "cookie":
             pass
         else:
+            # write_cache and del_cache are used for batch write operations
+            # after the request has been processed for datastore sessions.
+            # Objects may also exist in self.cache meaning the value is stored
+            # in multiple locations in memory, however session data should be
+            # small so this should not create much overhead in most use cases.
+            self.write_cache = {}
+            self.del_cache = []
+            
             self.sid = None
             new_session = True
 
@@ -561,6 +585,7 @@ class Session(object):
             # check for existing cookie
             if self.cookie.get(cookie_name):
                 self.sid = self.cookie[cookie_name].value
+                
                 # The following will return None if the sid has expired.
                 self.session = _AppEngineUtilities_Session.get_session(self)
                 if self.session:
@@ -611,6 +636,13 @@ class Session(object):
 
             self.cache[u"sid"] = self.sid
 
+            #TODO See if this write can deferred. Since the cookie token
+            # is being set in the headers, it may not be the case. Need to
+            # at lease validate self.put() still does this write once I
+            # am done making changes.
+            #
+            # It's a result of the security created by rotating tokens that
+            # requires this write on requests where the session token changes.
             if do_put:
                 if self.sid != None or self.sid != u"":
                     self.session.put()
@@ -629,10 +661,16 @@ class Session(object):
             import flash
             self.flash = flash.Flash(cookie=self.cookie)
 
+        # Run the request
+        f.gaeusession = self
+        f()
+        
         # randomly delete old stale sessions in the datastore (see
         # CLEAN_CHECK_PERCENT variable)
         if random.randint(1, 100) < clean_check_percent:
             self._clean_old_sessions() 
+
+
 
     def new_sid(self):
         """
@@ -644,9 +682,6 @@ class Session(object):
             hashlib.md5(repr(time.time()) + \
             unicode(random.random())).hexdigest()
         )
-        #sid = unicode(self.session.session_key) + "_" + \
-        #        hashlib.md5(repr(time.time()) + \
-        #        unicode(random.random())).hexdigest()
         return sid
 
     def _get(self, keyname=None):
@@ -702,11 +737,24 @@ class Session(object):
         Returns the value from the writer put operation, varies based on writer.
         """
         if self.writer == "datastore":
-            writer = _DatastoreWriter()
+        # datestore write trumps cookie. If there is a cookie value
+        # with this keyname, delete it so we don't have conflicting
+        # entries.
+            if self.cookie_vals.has_key(keyname):
+                del(self.cookie_vals[keyname])
+                self.output_cookie["%s_data" % (self.cookie_name)] = \
+                    simplejson.dumps(self.cookie_vals)
+                self.output_cookie["%s_data" % (self.cookie_name)]["path"] = \
+                    self.cookie_path
+                if self.cookie_domain:
+                    self.output_cookie["%s_data" % \
+                        (self.cookie_name)]["domain"] = self.cookie_domain
+                print self.output_cookie.output()
+            self.write_cache[keyname] = value
+            return True
         else:
             writer = _CookieWriter()
-
-        return writer.put(keyname, value, self)
+            return writer.put(keyname, value, self)
 
     def _delete_session(self):
         """
@@ -1015,6 +1063,26 @@ class Session(object):
             return self.session
         return None
 
+    def delete_item(self, keyname, throw_exception=False):
+        """
+        Delete item from session data, ignoring exceptions if
+        necessary.
+
+        Args:
+            keyname: The keyname of the object to delete.
+            throw_exception: false if exceptions are to be ignored.
+        Returns:
+            Nothing.
+        """
+        if throw_exception:
+            self.__delitem__(keyname)
+            return None
+        else:
+            try:
+                self.__delitem__(keyname)
+            except KeyError:
+                return None
+
     # Implement Python container methods
 
     def __getitem__(self, keyname):
@@ -1034,9 +1102,6 @@ class Session(object):
         if hasattr(self, u"session"):
             data = self._get(keyname)
             if data:
-                # TODO: It's broke here, but I'm not sure why, it's
-                # returning a model object, but I can't seem to modify
-                # it.
                 try:
                     if data.model != None:
                         self.cache[keyname] = data.model
@@ -1067,26 +1132,6 @@ class Session(object):
             self.cache[keyname] = value
             return self._put(keyname, value)
 
-    def delete_item(self, keyname, throw_exception=False):
-        """
-        Delete item from session data, ignoring exceptions if
-        necessary.
-
-        Args:
-            keyname: The keyname of the object to delete.
-            throw_exception: false if exceptions are to be ignored.
-        Returns:
-            Nothing.
-        """
-        if throw_exception:
-            self.__delitem__(keyname)
-            return None
-        else:
-            try:
-                self.__delitem__(keyname)
-            except KeyError:
-                return None
-
     def __delitem__(self, keyname):
         """
         Delete item from session data.
@@ -1099,7 +1144,7 @@ class Session(object):
         if sessdata is None:
             bad_key = True
         else:
-            sessdata.delete()
+            self.del_cache.append(keyname)
         if keyname in self.cookie_vals:
             del self.cookie_vals[keyname]
             bad_key = False
